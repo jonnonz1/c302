@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build output
+dist/
+*.js.map
+*.d.ts
+!packages/*/src/**/*.d.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test/coverage
+coverage/
+.pytest_cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Claude Code
+.claude/
+
+# Beans issue tracker
+.beans/
+.beans.yml
+
+# Research data (large, generated)
+research/experiments/*/
+research/*.pdf
+
+# Demo repo internal git
+# (demo-repo has its own .git — do not track its internal state)

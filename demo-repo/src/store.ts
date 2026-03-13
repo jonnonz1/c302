@@ -1,0 +1,83 @@
+/**
+ * In-memory todo store using a Map for O(1) lookups by ID.
+ * @module store
+ */
+
+import { v4 as uuidv4 } from 'uuid';
+import type { Todo } from './types.js';
+
+const todos = new Map<string, Todo>();
+
+/**
+ * Returns all todos as an array.
+ */
+export function getAllTodos(): Todo[] {
+  return Array.from(todos.values());
+}
+
+/**
+ * Finds a todo by its ID.
+ * @param id - The UUID of the todo to find.
+ * @returns The matching todo, or undefined if not found.
+ */
+export function getTodoById(id: string): Todo | undefined {
+  return todos.get(id);
+}
+
+/**
+ * Creates a new todo and stores it.
+ * @param title - The title of the todo (required).
+ * @param description - Optional description, defaults to ''.
+ * @param tags - Optional tags array, defaults to [].
+ * @returns The newly created todo.
+ */
+export function createTodo(
+  title: string,
+  description: string = '',
+  tags: string[] = [],
+): Todo {
+  const todo: Todo = {
+    id: uuidv4(),
+    title,
+    description,
+    completed: false,
+    tags,
+    createdAt: new Date().toISOString(),
+  };
+  todos.set(todo.id, todo);
+  return todo;
+}
+
+/**
+ * Updates an existing todo with partial data.
+ * @param id - The UUID of the todo to update.
+ * @param updates - Partial todo fields to merge.
+ * @returns The updated todo, or undefined if not found.
+ */
+export function updateTodo(
+  id: string,
+  updates: Partial<Pick<Todo, 'title' | 'description' | 'completed' | 'tags'>>,
+): Todo | undefined {
+  const existing = todos.get(id);
+  if (!existing) return undefined;
+
+  const updated: Todo = { ...existing, ...updates };
+  todos.set(id, updated);
+  return updated;
+}
+
+/**
+ * Deletes a todo by its ID.
+ * @param id - The UUID of the todo to delete.
+ * @returns True if the todo was deleted, false if not found.
+ */
+export function deleteTodo(id: string): boolean {
+  return todos.delete(id);
+}
+
+/**
+ * Removes all todos from the store. Used for test cleanup.
+ */
+export function clearTodos(): void {
+  todos.clear();
+}

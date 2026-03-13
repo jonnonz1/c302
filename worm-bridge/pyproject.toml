@@ -1,0 +1,42 @@
+# @file Python project configuration for the worm-bridge controller.
+#
+# The worm-bridge is a FastAPI service that exposes the behavioral controller
+# over HTTP. It receives tick signals + reward from the TypeScript agent and
+# returns a new ControlSurface.
+#
+# Phase 0: Health endpoint + Pydantic type definitions only.
+# Phase 1: Synthetic controller.
+# Phase 2: Replay and live connectome controllers.
+#
+# @project c302
+# @phase 0
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "worm-bridge"
+version = "0.1.0"
+description = "C. elegans connectome-derived behavioral controller for c302"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
+    "pydantic>=2.10.0",
+    "numpy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.28.0",
+    "pytest-asyncio>=0.25.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
