@@ -34,26 +34,6 @@ export function getTodoById(id: string): Todo | undefined {
 }
 
 /**
- * Searches todos by title substring and tags (case-insensitive).
- * @param query - The search term to match against title and tags.
- * @returns Array of todos that match the search query.
- */
-export function searchTodos(query: string): Todo[] {
-  if (!query || query.trim() === '') return [];
-  
-  const lowerQuery = query.toLowerCase().trim();
-  return Array.from(todos.values()).filter(todo => {
-    // Check if title contains the query (case-insensitive)
-    const titleMatch = todo.title.toLowerCase().includes(lowerQuery);
-    
-    // Check if any tag matches the query (case-insensitive)
-    const tagMatch = todo.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
-    
-    return titleMatch || tagMatch;
-  });
-}
-
-/**
  * Creates a new todo and stores it.
  * @param title - The title of the todo (required).
  * @param description - Optional description, defaults to ''.

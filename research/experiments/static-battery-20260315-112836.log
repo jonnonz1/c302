@@ -1,0 +1,66 @@
+=== c302 Battery ===
+  Controller:  static
+  Runs:        20
+  Battery ID:  static-battery-20260315-112836
+  Max ticks:   30
+  Resume:      0
+  Started:     Sun 15 Mar 2026 11:28:36 NZDT
+
+[battery] Building agent...
+
+[battery] [1/20] static-battery-20260315-112836-01 — starting...
+=== c302 Experiment ===
+  Controller:    static
+  Experiment ID: static-battery-20260315-112836-01
+  Output:        /Users/jonno/workspace/c302/scripts/../research/experiments/static-battery-20260315-112836-01
+  Max ticks:     30
+  Recording:     OFF
+
+[1/4] Build skipped (SKIP_BUILD=1)
+[2/4] Starting worm-bridge server (port 8642, controller=static)...
+  Waiting for server...
+  Server ready.
+[3/4] Resetting demo-repo to baseline...
+HEAD is now at fab1ac2 Baseline: CRUD passes, search not implemented
+demo-repo reset to initial commit: fab1ac2d6f88d185b7a19d1dd4a7f5e2b6a3a149
+[4/4] Running agent loop...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ c302 EXPERIMENT
+ controller=static  task="Fix failing tests in demo-repo"
+ max_ticks=30  run_id=8cd6815e
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TICK 1/30 │ diagnose │ temp=0.50 budget=2000 aggr=0.50
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ State │ arousal        █████░░░░░ 0.50
+       │ novelty        █████░░░░░ 0.50
+       │ stability      █████░░░░░ 0.50
+       │ persist        █████░░░░░ 0.50
+       │ err_aversion   ░░░░░░░░░░ 0.00
+       │ reward         █████░░░░░ 0.50
+[battery] [1/20] static-battery-20260315-112836-01 — FAIL (exit 130, 22s)
+
+[battery] [2/20] static-battery-20260315-112836-02 — starting...
+=== c302 Experiment ===
+  Controller:    static
+  Experiment ID: static-battery-20260315-112836-02
+  Output:        /Users/jonno/workspace/c302/scripts/../research/experiments/static-battery-20260315-112836-02
+  Max ticks:     30
+  Recording:     OFF
+
+[1/4] Build skipped (SKIP_BUILD=1)
+[2/4] Starting worm-bridge server (port 8642, controller=static)...
+  Waiting for server...
+  Server ready.
+[3/4] Resetting demo-repo to baseline...
+HEAD is now at fab1ac2 Baseline: CRUD passes, search not implemented
+demo-repo reset to initial commit: fab1ac2d6f88d185b7a19d1dd4a7f5e2b6a3a149
+[4/4] Running agent loop...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ c302 EXPERIMENT
+ controller=static  task="Fix failing tests in demo-repo"
+ max_ticks=30  run_id=d8e60421
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

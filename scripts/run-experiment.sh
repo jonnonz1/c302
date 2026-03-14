@@ -89,10 +89,14 @@ echo "  Max ticks:     $MAX_ITERATIONS"
 echo "  Recording:     $([ "$RECORD" = "1" ] && echo "ON" || echo "OFF")"
 echo ""
 
-# Step 1: Build the agent
-echo "[1/4] Building agent..."
-cd "$PROJECT_ROOT"
-npx tsc -p packages/agent/tsconfig.json
+# Step 1: Build the agent (skip if SKIP_BUILD=1, e.g. when called from run-battery.sh)
+if [ "${SKIP_BUILD:-0}" != "1" ]; then
+  echo "[1/4] Building agent..."
+  cd "$PROJECT_ROOT"
+  npx tsc -p packages/agent/tsconfig.json
+else
+  echo "[1/4] Build skipped (SKIP_BUILD=1)"
+fi
 
 # Step 2: Start worm-bridge server
 echo "[2/4] Starting worm-bridge server (port $WORM_BRIDGE_PORT, controller=$CONTROLLER)..."

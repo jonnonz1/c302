@@ -20,7 +20,6 @@ import {
   createTodo,
   updateTodo,
   deleteTodo,
-  searchTodos,
 } from './store.js';
 
 const router = Router();
@@ -33,13 +32,11 @@ router.get('/todos', (_req, res) => {
 });
 
 /**
- * GET /todos/search — Search todos by title and tags.
+ * GET /todos/search — Search todos (NOT IMPLEMENTED).
  * Registered before /todos/:id to prevent Express matching "search" as an :id.
  */
-router.get('/todos/search', (req, res) => {
-  const query = req.query.q as string;
-  const results = searchTodos(query || '');
-  res.json(results);
+router.get('/todos/search', (_req, res) => {
+  res.status(501).json({ error: 'Not implemented' });
 });
 
 /**
