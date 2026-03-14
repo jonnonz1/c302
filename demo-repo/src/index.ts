@@ -1,6 +1,15 @@
 /**
- * Express application entry point.
+ * @file Express application entry point for the demo todo API.
+ *
+ * Configures JSON body parsing and mounts the todo router.
+ * Listens on port 3456 by default.
+ *
+ * This is the target application that the c302 agent operates on
+ * during experiment runs. The agent modifies source files in this
+ * project to implement missing search functionality.
+ *
  * @module index
+ * @project c302 demo-repo
  */
 
 import express from 'express';

@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 ##
-# @file Reset the demo-repo to its baseline state.
+# @file reset-demo-repo.sh
+# @description Reset the demo-repo to its baseline state for a clean experiment.
 #
 # Performs a hard git reset of demo-repo/ to the initial commit,
-# restoring the state where CRUD works and search tests fail.
-# Used between experiment runs to ensure a clean starting point.
+# restoring the state where CRUD tests pass and search tests fail.
+# Also removes any untracked files via git clean.
 #
-# Usage: ./scripts/reset-demo-repo.sh
+# This is the canonical starting point for all experiments: the agent's
+# task is to make the search tests pass without breaking the CRUD tests.
+#
+# Called by run-experiment.sh before each experiment run.
+#
+# @usage ./scripts/reset-demo-repo.sh
 #
 # @project c302
 # @phase 0

@@ -40,6 +40,8 @@ coverage/
 # Research data (large, generated)
 research/experiments/*/
 research/*.pdf
+research/*.md
 
 # Demo repo internal git
 # (demo-repo has its own .git — do not track its internal state)
+demo-repo/.git

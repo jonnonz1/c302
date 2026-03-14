@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 ##
-# @file Capture a screen recording of an experiment run.
+# @file capture-video.sh
+# @description Capture a video of an experiment run.
 #
-# Wraps a screen recording tool around an experiment execution
-# for use in the presentation and website.
+# Thin wrapper around run-experiment.sh that enables video recording.
+# Records the dashboard browser window via macOS screencapture and
+# produces an MP4 in the experiment output directory.
 #
-# Usage: ./scripts/capture-video.sh <controller-type>
+# @usage ./scripts/capture-video.sh <controller-type> [experiment-id]
+#   controller-type: static | synthetic | replay | live | plastic
 #
 # @project c302
-# @phase 0 (placeholder)
 ##
 
 set -euo pipefail
 
-echo "TODO: integrate screen capture"
-echo "capture-video.sh: Not yet implemented."
-echo "Usage: $0 <controller-type>"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+RECORD=1 exec "$SCRIPT_DIR/run-experiment.sh" "$@"

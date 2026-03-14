@@ -1,13 +1,20 @@
 /**
  * @file Tests for the ResearchLogger.
  *
- * Verifies that:
+ * Validates the structured experiment data capture pipeline. Each test
+ * uses a temporary directory that is cleaned up after the test completes.
+ *
+ * Coverage:
  * - logMeta() creates meta.json with correct content
  * - logTick() appends to all trace files and increments tick count
  * - writeSummary() creates summary.json
  * - Multiple ticks produce arrays with correct length
- * - Console output includes tick summary line
- * - neuronActivity is written only when present
+ * - Console output is not produced (moved to TerminalDisplay)
+ * - neuronActivity is persisted only when provided (connectome controllers)
+ * - neuronActivity is omitted when absent (static/synthetic controllers)
+ *
+ * These tests matter because the trace files are the primary research
+ * output -- any data loss or format error invalidates an experiment run.
  *
  * @project c302
  * @phase 0
@@ -29,6 +36,11 @@ import type {
   NeuronGroupActivity,
 } from '../types.js';
 
+/**
+ * Creates a valid ExperimentMeta fixture for testing.
+ *
+ * @returns ExperimentMeta with static controller type and default reward weights
+ */
 function makeMeta(): ExperimentMeta {
   return {
     run_id: 'test-run-001',
@@ -47,6 +59,11 @@ function makeMeta(): ExperimentMeta {
   };
 }
 
+/**
+ * Creates a valid ControlSurface fixture in diagnose mode.
+ *
+ * @returns ControlSurface with mid-range parameters and read-only tools
+ */
 function makeSurface(): ControlSurface {
   return {
     mode: 'diagnose',
@@ -59,6 +76,11 @@ function makeSurface(): ControlSurface {
   };
 }
 
+/**
+ * Creates a valid RewardBreakdown fixture with a net positive reward.
+ *
+ * @returns RewardBreakdown with test improvement and small patch penalty
+ */
 function makeReward(): RewardBreakdown {
   return {
     total: 0.25,
@@ -72,6 +94,11 @@ function makeReward(): RewardBreakdown {
   };
 }
 
+/**
+ * Creates a valid AgentAction fixture representing a read-only diagnose step.
+ *
+ * @returns AgentAction with one read_file tool call and no files written
+ */
 function makeAction(): AgentAction {
   return {
     mode: 'diagnose',
@@ -85,6 +112,11 @@ function makeAction(): AgentAction {
   };
 }
 
+/**
+ * Creates a valid RepoSnapshot fixture with partial test failures.
+ *
+ * @returns RepoSnapshot with 6/10 tests passing, clean build, no git changes
+ */
 function makeSnapshot(): RepoSnapshot {
   return {
     test_results: {
@@ -105,6 +137,11 @@ function makeSnapshot(): RepoSnapshot {
   };
 }
 
+/**
+ * Creates a valid ControllerState fixture at default initial values.
+ *
+ * @returns ControllerState with all variables at their reset defaults
+ */
 function makeControllerState(): ControllerState {
   return {
     arousal: 0.5,
@@ -116,6 +153,11 @@ function makeControllerState(): ControllerState {
   };
 }
 
+/**
+ * Creates a valid NeuronGroupActivity fixture with sample neuron readings.
+ *
+ * @returns NeuronGroupActivity with sensory (ASEL, ASER), command (AVA), and motor (forward)
+ */
 function makeNeuronActivity(): NeuronGroupActivity {
   return {
     sensory: { ASEL: 0.8, ASER: 0.2 },
@@ -124,6 +166,13 @@ function makeNeuronActivity(): NeuronGroupActivity {
   };
 }
 
+/**
+ * Reads and parses a JSON file from the experiment directory.
+ *
+ * @param dir - Absolute path to the experiment directory
+ * @param filename - Name of the JSON file to read
+ * @returns Parsed JSON content
+ */
 function readJson(dir: string, filename: string): unknown {
   return JSON.parse(readFileSync(join(dir, filename), 'utf-8'));
 }
@@ -142,8 +191,9 @@ describe('ResearchLogger', () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  /** Verifies logMeta() persists experiment metadata as valid JSON. */
   it('logMeta writes meta.json', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
     const meta = makeMeta();
     logger.logMeta(meta);
 
@@ -151,8 +201,9 @@ describe('ResearchLogger', () => {
     expect(written).toEqual(meta);
   });
 
+  /** Verifies logTick() writes to all 5 core trace files and accumulates entries. */
   it('logTick appends to all trace files', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
 
     const tickData = {
       surface: makeSurface(),
@@ -178,8 +229,9 @@ describe('ResearchLogger', () => {
     expect(states).toHaveLength(2);
   });
 
+  /** Verifies neuron activity data is persisted when provided (connectome controllers). */
   it('logTick with neuronActivity writes neuron-activity-traces.json', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
 
     logger.logTick({
       surface: makeSurface(),
@@ -195,8 +247,9 @@ describe('ResearchLogger', () => {
     expect(neurons[0]).toEqual(makeNeuronActivity());
   });
 
+  /** Verifies neuron trace file is not created for static/synthetic controllers. */
   it('logTick without neuronActivity does not create neuron file', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
 
     logger.logTick({
       surface: makeSurface(),
@@ -209,8 +262,9 @@ describe('ResearchLogger', () => {
     expect(existsSync(join(expDir, 'neuron-activity-traces.json'))).toBe(false);
   });
 
+  /** Verifies writeSummary() persists aggregated experiment results. */
   it('writeSummary creates summary.json', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
 
     const summary: ExperimentSummary = {
       run_id: 'test-run-001',
@@ -237,8 +291,9 @@ describe('ResearchLogger', () => {
     expect(written).toEqual(summary);
   });
 
-  it('console output includes tick line', () => {
-    const logger = new ResearchLogger(tmpDir, experimentId);
+  /** Verifies logTick does not produce console output (moved to TerminalDisplay). */
+  it('logTick does not write to console', () => {
+    const logger = new ResearchLogger(join(tmpDir, experimentId));
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     logger.logTick({
@@ -249,15 +304,7 @@ describe('ResearchLogger', () => {
       controllerState: makeControllerState(),
     });
 
-    expect(spy).toHaveBeenCalledOnce();
-    const msg = spy.mock.calls[0]![0] as string;
-    expect(msg).toContain('[tick 1]');
-    expect(msg).toContain('mode=diagnose');
-    expect(msg).toContain('reward=0.250');
-    expect(msg).toContain('tests=6/10');
-    expect(msg).toContain('arousal=0.50');
-    expect(msg).toContain('novelty=0.50');
-
+    expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
   });
 });

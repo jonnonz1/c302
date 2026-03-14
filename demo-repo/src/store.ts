@@ -1,6 +1,13 @@
 /**
- * In-memory todo store using a Map for O(1) lookups by ID.
+ * @file In-memory todo store using a Map for O(1) lookups by ID.
+ *
+ * Provides CRUD operations for Todo items. This is the data layer
+ * that the c302 agent must extend with search functionality.
+ * The search implementation is intentionally missing -- the agent's
+ * task is to add it.
+ *
  * @module store
+ * @project c302 demo-repo
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -9,7 +16,9 @@ import type { Todo } from './types.js';
 const todos = new Map<string, Todo>();
 
 /**
- * Returns all todos as an array.
+ * Returns all todos as an array, ordered by insertion.
+ *
+ * @returns Array of all stored Todo items
  */
 export function getAllTodos(): Todo[] {
   return Array.from(todos.values());
@@ -22,6 +31,26 @@ export function getAllTodos(): Todo[] {
  */
 export function getTodoById(id: string): Todo | undefined {
   return todos.get(id);
+}
+
+/**
+ * Searches todos by title substring and tags (case-insensitive).
+ * @param query - The search term to match against title and tags.
+ * @returns Array of todos that match the search query.
+ */
+export function searchTodos(query: string): Todo[] {
+  if (!query || query.trim() === '') return [];
+  
+  const lowerQuery = query.toLowerCase().trim();
+  return Array.from(todos.values()).filter(todo => {
+    // Check if title contains the query (case-insensitive)
+    const titleMatch = todo.title.toLowerCase().includes(lowerQuery);
+    
+    // Check if any tag matches the query (case-insensitive)
+    const tagMatch = todo.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+    
+    return titleMatch || tagMatch;
+  });
 }
 
 /**

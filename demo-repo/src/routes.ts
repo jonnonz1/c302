@@ -1,6 +1,16 @@
 /**
- * Express router defining all todo REST endpoints.
+ * @file Express router defining all todo REST endpoints.
+ *
+ * Implements the REST API for the demo todo application.
+ * CRUD endpoints are fully implemented. The search endpoint
+ * returns 501 Not Implemented -- this is the gap the c302 agent
+ * must fill during an experiment run.
+ *
+ * Route order matters: /todos/search is registered before /todos/:id
+ * to prevent Express from matching "search" as a UUID parameter.
+ *
  * @module routes
+ * @project c302 demo-repo
  */
 
 import { Router } from 'express';
@@ -10,6 +20,7 @@ import {
   createTodo,
   updateTodo,
   deleteTodo,
+  searchTodos,
 } from './store.js';
 
 const router = Router();
@@ -22,11 +33,13 @@ router.get('/todos', (_req, res) => {
 });
 
 /**
- * GET /todos/search — Search todos (NOT IMPLEMENTED).
+ * GET /todos/search — Search todos by title and tags.
  * Registered before /todos/:id to prevent Express matching "search" as an :id.
  */
-router.get('/todos/search', (_req, res) => {
-  res.status(501).json({ error: 'Not implemented' });
+router.get('/todos/search', (req, res) => {
+  const query = req.query.q as string;
+  const results = searchTodos(query || '');
+  res.json(results);
 });
 
 /**

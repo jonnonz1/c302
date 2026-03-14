@@ -1,9 +1,11 @@
-"""
-Pydantic models for the worm-bridge controller service.
+"""Pydantic models for the worm-bridge controller service.
 
 Defines the data contracts between the TypeScript agent and the Python
-controller. These models mirror the TypeScript interfaces in agent/src/types.ts
-and are the source of truth for request/response validation.
+controller. These models mirror the TypeScript interfaces in
+``packages/agent/src/types.ts`` and are the source of truth for
+request/response validation via FastAPI.
+
+Any structural change here must be reflected in the TypeScript types.
 
 Models:
     AgentMode           -- The 7 behavioral modes the controller can select.
@@ -14,8 +16,6 @@ Models:
     NeuronGroupActivity -- Neural activity readings by functional class (Phase 2+).
     ControlSurface      -- The behavioral control surface emitted each tick.
     TickResponse        -- Wrapper: surface + state + optional neuron_activity.
-
-Dependencies: pydantic, typing, enum
 """
 
 from __future__ import annotations
@@ -51,17 +51,22 @@ class ToolName(str, Enum):
 
     READ_FILE = "read_file"
     WRITE_FILE = "write_file"
-    SEARCH = "search"
+    SEARCH_CODE = "search_code"
     RUN_COMMAND = "run_command"
     LIST_FILES = "list_files"
 
 
+"""Maps each AgentMode to the tools the agent may invoke in that mode.
+
+This is the enforcement mechanism for mode-specific behavior constraints.
+The agent-side surface applicator uses this to filter available tools.
+"""
 TOOL_MASKS: dict[AgentMode, list[ToolName]] = {
-    AgentMode.DIAGNOSE: [ToolName.READ_FILE, ToolName.SEARCH, ToolName.LIST_FILES],
-    AgentMode.SEARCH: [ToolName.READ_FILE, ToolName.SEARCH, ToolName.LIST_FILES],
+    AgentMode.DIAGNOSE: [ToolName.READ_FILE, ToolName.SEARCH_CODE, ToolName.LIST_FILES],
+    AgentMode.SEARCH: [ToolName.READ_FILE, ToolName.SEARCH_CODE, ToolName.LIST_FILES],
     AgentMode.EDIT_SMALL: [ToolName.READ_FILE, ToolName.WRITE_FILE, ToolName.LIST_FILES],
     AgentMode.EDIT_LARGE: [
-        ToolName.READ_FILE, ToolName.WRITE_FILE, ToolName.SEARCH, ToolName.LIST_FILES,
+        ToolName.READ_FILE, ToolName.WRITE_FILE, ToolName.SEARCH_CODE, ToolName.LIST_FILES,
     ],
     AgentMode.RUN_TESTS: [ToolName.RUN_COMMAND],
     AgentMode.REFLECT: [ToolName.READ_FILE, ToolName.LIST_FILES],

@@ -1,3 +1,20 @@
+/**
+ * @file CRUD endpoint tests for the demo todo API.
+ *
+ * These tests verify the baseline functionality that must remain passing
+ * throughout every c302 experiment run. The agent's task is to implement
+ * search without breaking any of these tests.
+ *
+ * Coverage:
+ * - POST /todos: create with title, description, tags; validation (missing/empty title)
+ * - GET /todos: list all; empty list
+ * - GET /todos/:id: find by ID; 404 for missing
+ * - PUT /todos/:id: update fields including tags; 404 for missing
+ * - DELETE /todos/:id: delete existing; 404 for missing
+ *
+ * @project c302 demo-repo
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -5,7 +22,9 @@ import router from '../routes.js';
 import { clearTodos } from '../store.js';
 
 /**
- * Creates a fresh Express app instance for testing.
+ * Creates a fresh Express app instance with JSON parsing and todo routes.
+ *
+ * @returns Configured Express application for supertest
  */
 function createApp() {
   const app = express();

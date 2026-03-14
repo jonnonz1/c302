@@ -15,6 +15,11 @@
  *
  * Also emits a one-line console summary per tick for screen recording capture.
  *
+ * Lifecycle: construct -> logMeta() -> logTick() x N -> writeSummary()
+ *
+ * Trace files use a read-parse-append-write pattern for simplicity.
+ * This is acceptable for the expected tick counts (~20-50 per experiment).
+ *
  * @project c302
  * @phase 0
  */
@@ -38,6 +43,10 @@ import type {
  * Creates a directory per experiment and writes separate JSON trace files
  * for each data type. Supports append-per-tick for trace files and
  * single-write for metadata and summary.
+ *
+ * Separating data into distinct files allows downstream analysis scripts
+ * to load only the traces they need (e.g. reward-history for convergence
+ * plots, controller-state for state-space visualization).
  */
 export class ResearchLogger {
   private dir: string;
@@ -46,11 +55,10 @@ export class ResearchLogger {
   /**
    * Create a new ResearchLogger instance.
    *
-   * @param outputDir - Base directory for all experiments (e.g. research/experiments)
-   * @param experimentId - Unique identifier for this run
+   * @param dir - Directory to write trace files into
    */
-  constructor(outputDir: string, experimentId: string) {
-    this.dir = join(outputDir, experimentId);
+  constructor(dir: string) {
+    this.dir = dir;
     if (!existsSync(this.dir)) {
       mkdirSync(this.dir, { recursive: true });
     }
@@ -67,9 +75,18 @@ export class ResearchLogger {
 
   /**
    * Append one tick's worth of data to all trace files.
+   *
    * Call once per tick after the agent acts and reward is computed.
+   * Writes to 5-6 trace files and emits a summary line to console.
+   * neuronActivity is only persisted when provided (connectome controllers).
    *
    * @param data - All data captured during this tick
+   * @param data.surface - The control surface applied this tick
+   * @param data.reward - Computed reward breakdown for this tick
+   * @param data.action - What the agent did (tools called, files touched)
+   * @param data.snapshot - Repository state after the agent acted
+   * @param data.controllerState - Controller's internal state variables
+   * @param data.neuronActivity - Neural activity readings (optional, connectome only)
    */
   logTick(data: {
     surface: ControlSurface;
@@ -89,17 +106,6 @@ export class ResearchLogger {
     if (data.neuronActivity) {
       this.appendToArray('neuron-activity-traces.json', data.neuronActivity);
     }
-
-    const testResults = data.snapshot.test_results;
-    const passed = testResults ? testResults.passed : 0;
-    const total = testResults ? testResults.total : 0;
-    console.log(
-      `[tick ${this.tickCount}] mode=${data.surface.mode} ` +
-      `reward=${data.reward.total.toFixed(3)} ` +
-      `tests=${passed}/${total} ` +
-      `arousal=${data.controllerState.arousal.toFixed(2)} ` +
-      `novelty=${data.controllerState.novelty_seek.toFixed(2)}`
-    );
   }
 
   /**

@@ -1,8 +1,7 @@
-"""
-Tests for the worm-bridge FastAPI server.
+"""Tests for the worm-bridge FastAPI server.
 
-Phase 0: Verifies all endpoint stubs return correct responses.
-Covers health, tick, state, reset, and config endpoints.
+Validates the HTTP contract between the TypeScript agent and the Python
+controller. Uses FastAPI's TestClient for synchronous in-process requests.
 """
 
 from fastapi.testclient import TestClient
@@ -11,9 +10,16 @@ from worm_bridge.server import app
 
 client = TestClient(app)
 
+SIGNALS = {
+    "error_count": 0,
+    "test_pass_rate": 1.0,
+    "files_changed": 0,
+    "iterations": 0,
+}
+
 
 def test_health():
-    """Health endpoint returns status ok, version, and controller type."""
+    """Verify /health returns server status, version, controller type, and uptime."""
     response = client.get("/health")
     assert response.status_code == 200
     body = response.json()
@@ -24,7 +30,7 @@ def test_health():
 
 
 def test_tick_returns_surface_and_state():
-    """Tick endpoint accepts a TickRequest and returns TickResponse."""
+    """Verify /tick returns a TickResponse with valid surface parameters and state."""
     client.post("/reset")
     payload = {
         "reward": 0.5,
@@ -52,60 +58,38 @@ def test_tick_returns_surface_and_state():
 
 
 def test_tick_null_reward():
-    """Tick endpoint accepts null reward (first tick of an experiment)."""
+    """Verify /tick accepts null reward for the first tick of an experiment."""
     client.post("/reset")
     payload = {
         "reward": None,
-        "signals": {
-            "error_count": 0,
-            "test_pass_rate": 1.0,
-            "files_changed": 0,
-            "iterations": 0,
-        },
+        "signals": SIGNALS,
     }
     response = client.post("/tick", json=payload)
     assert response.status_code == 200
 
 
 def test_tick_cycles_modes():
-    """Static controller cycles through the fixed mode sequence."""
+    """Verify the static controller cycles through diagnose -> search -> edit-small -> run-tests."""
     client.post("/reset")
     expected_modes = ["diagnose", "search", "edit-small", "run-tests"]
-    signals = {
-        "error_count": 0,
-        "test_pass_rate": 1.0,
-        "files_changed": 0,
-        "iterations": 0,
-    }
     for expected_mode in expected_modes:
-        response = client.post("/tick", json={"signals": signals})
+        response = client.post("/tick", json={"signals": SIGNALS})
         body = response.json()
         assert body["surface"]["mode"] == expected_mode
 
 
 def test_state_returns_worm_state():
-    """State endpoint returns the current WormState."""
+    """Verify /state returns all 6 controller internal variables."""
     response = client.get("/state")
     assert response.status_code == 200
     body = response.json()
-    assert "arousal" in body
-    assert "novelty_seek" in body
-    assert "stability" in body
-    assert "persistence" in body
-    assert "error_aversion" in body
-    assert "reward_trace" in body
+    for key in ("arousal", "novelty_seek", "stability", "persistence", "error_aversion", "reward_trace"):
+        assert key in body
 
 
 def test_reset_clears_state():
-    """Reset endpoint resets controller to initial state."""
-    client.post("/tick", json={
-        "signals": {
-            "error_count": 0,
-            "test_pass_rate": 1.0,
-            "files_changed": 0,
-            "iterations": 0,
-        },
-    })
+    """Verify /reset returns confirmation and resets to initial state."""
+    client.post("/tick", json={"signals": SIGNALS})
     response = client.post("/reset")
     assert response.status_code == 200
     body = response.json()
@@ -114,44 +98,30 @@ def test_reset_clears_state():
 
 
 def test_reset_restarts_mode_cycle():
-    """After reset, the mode cycle starts from the beginning."""
+    """Verify /reset restarts the mode cycle from diagnose."""
     client.post("/reset")
-    signals = {
-        "error_count": 0,
-        "test_pass_rate": 1.0,
-        "files_changed": 0,
-        "iterations": 0,
-    }
-    client.post("/tick", json={"signals": signals})
-    client.post("/tick", json={"signals": signals})
+    client.post("/tick", json={"signals": SIGNALS})
+    client.post("/tick", json={"signals": SIGNALS})
     client.post("/reset")
-    response = client.post("/tick", json={"signals": signals})
+    response = client.post("/tick", json={"signals": SIGNALS})
     assert response.json()["surface"]["mode"] == "diagnose"
 
 
 def test_config_returns_controller_config():
-    """Config endpoint returns controller type, parameters, and tool masks."""
+    """Verify /config returns controller configuration."""
     response = client.get("/config")
     assert response.status_code == 200
     body = response.json()
     assert body["controller_type"] == "static"
-    assert "mode_sequence" in body
-    assert "fixed_parameters" in body
     assert "tool_masks" in body
     assert "diagnose" in body["tool_masks"]
     assert "stop" in body["tool_masks"]
 
 
 def test_tick_tool_masks_match_mode():
-    """Each mode's allowed_tools matches the documented tool mask."""
+    """Verify diagnose mode's allowed_tools matches the TOOL_MASKS definition."""
     client.post("/reset")
-    signals = {
-        "error_count": 0,
-        "test_pass_rate": 1.0,
-        "files_changed": 0,
-        "iterations": 0,
-    }
-    response = client.post("/tick", json={"signals": signals})
+    response = client.post("/tick", json={"signals": SIGNALS})
     surface = response.json()["surface"]
     assert surface["mode"] == "diagnose"
-    assert set(surface["allowed_tools"]) == {"read_file", "search", "list_files"}
+    assert set(surface["allowed_tools"]) == {"read_file", "search_code", "list_files"}

@@ -8,7 +8,7 @@
 # @phase 0
 ##
 
-.PHONY: install build test test-demo clean worm-bridge-dev agent-dev reset-demo
+.PHONY: install build test test-demo clean worm-bridge-dev agent-dev reset-demo analyze
 
 install:
 	npm install
@@ -38,3 +38,7 @@ agent-dev:
 
 reset-demo:
 	./scripts/reset-demo-repo.sh
+
+analyze:
+	@if [ -z "$(DIR)" ]; then echo "Usage: make analyze DIR=research/experiments/<id>"; exit 1; fi
+	cd worm-bridge && python -m worm_bridge.cli analyze ../$(DIR)

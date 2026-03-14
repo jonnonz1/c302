@@ -8,13 +8,21 @@
  * (Python/FastAPI) and the LLM coding agent (TypeScript). Any changes here
  * must be mirrored in worm-bridge/worm_bridge/types.py.
  *
+ * Architecture:
+ *   Agent (TS) --TickRequest--> Controller (Python) --TickResponse--> Agent
+ *   The controller never sees source code, prompts, or LLM output.
+ *   It only receives scalar reward and observable signals.
+ *
  * @project c302
  * @phase 0
  */
 
 /**
  * The 7 behavioral modes the controller can select.
- * Each mode maps to a distinct system prompt and tool mask.
+ *
+ * Each mode maps to a distinct system prompt and tool mask on the agent side.
+ * The mode sequence forms the highest-level behavioral switch -- analogous to
+ * C. elegans locomotion states (forward, reverse, turn, dwell, etc.).
  */
 export type AgentMode =
   | 'diagnose'
@@ -307,9 +315,14 @@ export interface RewardWeights {
 
 /**
  * The 6 internal state variables maintained by the controller.
+ *
  * These are engineered analogies to C. elegans neural circuit functions,
  * not biological claims. The same state structure is used by all controller
  * variants -- only the update mechanism differs.
+ *
+ * In connectome controllers, these variables are derived from grouped
+ * neuron membrane potentials. In synthetic controllers, they are updated
+ * by handcrafted rules based on reward and signals.
  */
 export interface ControllerState {
   /**
@@ -404,6 +417,12 @@ export interface TickLog {
 
 /**
  * Grouped neural activity readings from the c302 simulation or replay data.
+ *
+ * Neurons are grouped by functional class following the C. elegans connectome:
+ * - Sensory: amphid neurons that detect environmental signals
+ * - Command: interneurons that integrate and select behavioral programs
+ * - Motor: output neurons that drive locomotion (mapped to agent actions)
+ *
  * Used for research logging and visualization. Not consumed by the agent.
  */
 export interface NeuronGroupActivity {
@@ -480,11 +499,41 @@ export interface TickResponse {
 }
 
 /**
+ * Rolling context passed to the agent each tick.
+ * Contains recent history so the agent can build on prior work.
+ */
+export interface TickContext {
+  tick: number;
+  maxTicks: number;
+  history: TickHistoryEntry[];
+}
+
+/**
+ * Summary of a single past tick for rolling context.
+ */
+export interface TickHistoryEntry {
+  tick: number;
+  mode: AgentMode;
+  filesWritten: string[];
+  testPassRate: number | null;
+  reward: number;
+  description: string;
+}
+
+/**
  * The type of controller being used in an experiment.
+ *
+ * - static:    Fixed mode cycle, constant parameters (Phase 0 baseline)
+ * - synthetic: Handcrafted update rules, no connectome data
+ * - random:    Uniform random sampling each tick (baseline)
+ * - replay:    Driven by pre-recorded c302 simulation traces
+ * - live:      Real-time c302 simulation via NEURON/jNeuroML
+ * - plastic:   Live simulation with synaptic weight updates
  */
 export type ControllerType =
   | 'static'
   | 'synthetic'
+  | 'random'
   | 'replay'
   | 'live'
   | 'plastic';
@@ -499,6 +548,9 @@ export interface ExperimentMeta {
 
   /** Which controller variant is being tested. */
   controller_type: ControllerType;
+
+  /** Claude model ID used for the agent (for reproducibility). */
+  model_id: string;
 
   /** Description of the task (for human reference). */
   task: string;

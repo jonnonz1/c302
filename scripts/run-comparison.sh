@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 ##
-# @file Run comparison experiments across all controller types.
+# @file run-comparison.sh
+# @description Run comparison experiments across all controller types.
 #
-# Runs the same task with each controller type sequentially,
-# then generates comparison figures. Each controller is run
-# N times (default 1) to allow statistical comparison.
+# Executes the same coding task with each controller variant sequentially,
+# then generates comparison figures. Each controller is run N times
+# (default 1) to provide statistical baselines for comparing controller
+# performance (convergence speed, final reward, mode distribution).
 #
-# Usage: ./scripts/run-comparison.sh [num-runs-per-controller]
+# Results are written to research/experiments/ with auto-generated IDs.
+# After all runs complete, generate-figures.sh is invoked to produce
+# comparison plots.
+#
+# @usage ./scripts/run-comparison.sh [num-runs-per-controller]
+#   num-runs-per-controller: number of experiment runs per controller (default: 1)
 #
 # @project c302
-# @phase 0 (placeholder — comparison logic added in Phase 2+)
+# @phase 0 (placeholder -- comparison logic added in Phase 2+)
 ##
 
 set -euo pipefail

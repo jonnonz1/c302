@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>c302 Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --cyan: #56d4dd;
+    --yellow: #d29922;
+    --magenta: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    padding: 12px;
+    width: 1280px;
+    min-height: 720px;
+  }
+  h1 { font-size: 16px; margin-bottom: 10px; color: var(--text); }
+  .status {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; margin-left: 12px;
+  }
+  .status.connected { background: #1a3a2a; color: var(--green); }
+  .status.disconnected { background: #3a1a1a; color: var(--red); }
+
+  .rec-indicator {
+    display: inline-block; margin-left: 12px;
+    font-size: 11px; color: var(--red); font-weight: bold;
+  }
+  .rec-indicator .rec-dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--red);
+    margin-right: 4px; vertical-align: middle;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .rec-indicator.done { color: var(--green); }
+  .rec-indicator.done .rec-dot { background: var(--green); animation: none; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .panel h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .panel canvas { width: 100% !important; max-height: 160px; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: 1 / -1; }
+
+  .mode-bar {
+    display: flex; gap: 2px; flex-wrap: wrap;
+    min-height: 20px; align-items: stretch;
+  }
+  .mode-cell {
+    height: 20px; min-width: 6px; border-radius: 2px;
+    flex-grow: 1;
+  }
+
+  .test-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px;
+  }
+  .test-card {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg);
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s, background 0.3s;
+  }
+  .test-card.passed { border-color: var(--green); }
+  .test-card.failed { border-color: var(--red); }
+  .test-card.just-passed {
+    border-color: var(--green);
+    background: rgba(63, 185, 80, 0.1);
+    animation: flash-green 1.5s ease-out;
+  }
+  @keyframes flash-green {
+    0% { background: rgba(63, 185, 80, 0.3); }
+    100% { background: rgba(63, 185, 80, 0.1); }
+  }
+  .test-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .test-dot.passed { background: var(--green); }
+  .test-dot.failed { background: var(--red); }
+  .test-dot.skipped { background: var(--text-dim); }
+  .test-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .code-changes {
+    font-size: 12px; line-height: 1.6;
+    max-height: 140px; overflow-y: auto;
+  }
+  .change-entry { padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .change-tick { color: var(--blue); font-weight: bold; }
+  .change-add { color: var(--green); }
+  .change-del { color: var(--red); }
+  .change-file { color: var(--text-dim); }
+
+  .feed {
+    max-height: 140px; overflow-y: auto;
+    font-size: 12px; line-height: 1.5;
+  }
+  .feed-entry { padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .feed-tick { color: var(--blue); font-weight: bold; }
+  .feed-mode { font-weight: bold; }
+  .feed-tool { color: var(--yellow); }
+
+  .params-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  }
+  .param-box {
+    text-align: center; padding: 6px;
+    background: var(--bg); border-radius: 4px;
+  }
+  .param-value { font-size: 18px; font-weight: bold; color: var(--blue); }
+  .param-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>c302 Experiment Dashboard
+  <span id="status" class="status disconnected">disconnected</span>
+  <span id="recIndicator" class="rec-indicator" style="display:none">
+    <span class="rec-dot"></span>REC <span id="recFrames">0</span>f
+  </span>
+</h1>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Reward Curve</h2>
+    <canvas id="rewardChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Test Pass Rate</h2>
+    <canvas id="testChart"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>Controller State</h2>
+    <canvas id="stateChart"></canvas>
+  </div>
+
+  <div class="panel col-span-3">
+    <h2>Test Status</h2>
+    <div class="test-grid" id="testGrid"></div>
+  </div>
+
+  <div class="panel col-span-3">
+    <h2>Mode Timeline</h2>
+    <div class="mode-bar" id="modeBar"></div>
+  </div>
+
+  <div class="panel">
+    <h2>LLM Feed</h2>
+    <div class="feed" id="llmFeed"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Code Changes</h2>
+    <div class="code-changes" id="codeChanges"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Surface Parameters</h2>
+    <div class="params-grid">
+      <div class="param-box">
+        <div class="param-value" id="p-temp">--</div>
+        <div class="param-label">temperature</div>
+      </div>
+      <div class="param-box">
+        <div class="param-value" id="p-budget">--</div>
+        <div class="param-label">token_budget</div>
+      </div>
+      <div class="param-box">
+        <div class="param-value" id="p-aggr">--</div>
+        <div class="param-label">aggression</div>
+      </div>
+      <div class="param-box">
+        <div class="param-value" id="p-breadth">--</div>
+        <div class="param-label">search_breadth</div>
+      </div>
+      <div class="param-box">
+        <div class="param-value" id="p-stop">--</div>
+        <div class="param-label">stop_threshold</div>
+      </div>
+      <div class="param-box">
+        <div class="param-value" id="p-mode">--</div>
+        <div class="param-label">mode</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MODE_COLORS = {
+  'diagnose': '#56d4dd',
+  'search': '#d29922',
+  'edit-small': '#3fb950',
+  'edit-large': '#bc8cff',
+  'run-tests': '#58a6ff',
+  'reflect': '#c9d1d9',
+  'stop': '#f85149',
+};
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#8b949e', font: { size: 10, family: 'monospace' } } } },
+  scales: {
+    x: { ticks: { color: '#8b949e', font: { size: 9 } }, grid: { color: '#21262d' } },
+    y: { ticks: { color: '#8b949e', font: { size: 9 } }, grid: { color: '#21262d' } },
+  },
+};
+
+const rewardChart = new Chart(document.getElementById('rewardChart'), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Total Reward',
+      data: [],
+      borderColor: '#58a6ff',
+      backgroundColor: 'rgba(88,166,255,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+    }],
+  },
+  options: { ...chartDefaults },
+});
+
+const testChart = new Chart(document.getElementById('testChart'), {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Pass Rate',
+      data: [],
+      borderColor: '#3fb950',
+      backgroundColor: 'rgba(63,185,80,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 3,
+    }],
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      ...chartDefaults.scales,
+      y: { ...chartDefaults.scales.y, min: 0, max: 1 },
+    },
+  },
+});
+
+const stateChart = new Chart(document.getElementById('stateChart'), {
+  type: 'radar',
+  data: {
+    labels: ['arousal', 'novelty_seek', 'stability', 'persistence', 'error_aversion', 'reward_trace'],
+    datasets: [{
+      label: 'State',
+      data: [0, 0, 0, 0, 0, 0],
+      borderColor: '#56d4dd',
+      backgroundColor: 'rgba(86,212,221,0.15)',
+      pointBackgroundColor: '#56d4dd',
+    }],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        min: -1, max: 1,
+        ticks: { color: '#8b949e', backdropColor: 'transparent', font: { size: 9 } },
+        grid: { color: '#21262d' },
+        pointLabels: { color: '#8b949e', font: { size: 9 } },
+      },
+    },
+    plugins: { legend: { display: false } },
+  },
+});
+
+// --- Recording state ---
+const isRecording = new URLSearchParams(window.location.search).get('record') === '1';
+const capturedFrames = [];
+let captureInProgress = false;
+
+if (isRecording) {
+  document.getElementById('recIndicator').style.display = 'inline-block';
+}
+
+let tickCount = 0;
+const previousTestStatus = {};
+
+/**
+ * Process an incoming tick event from SSE.
+ */
+function processTick(data) {
+  if (data.experiment_complete) {
+    finishRecording();
+    return;
+  }
+
+  tickCount++;
+  const tick = tickCount;
+
+  const surface = data.surface || {};
+  const state = data.state || {};
+  const reward = data.reward || {};
+  const action = data.action || {};
+  const snapshot = data.snapshot || {};
+
+  rewardChart.data.labels.push(tick);
+  rewardChart.data.datasets[0].data.push(reward.total || 0);
+  rewardChart.update('none');
+
+  const passRate = snapshot.test_results?.pass_rate ?? 0;
+  testChart.data.labels.push(tick);
+  testChart.data.datasets[0].data.push(passRate);
+  testChart.update('none');
+
+  stateChart.data.datasets[0].data = [
+    state.arousal || 0,
+    state.novelty_seek || 0,
+    state.stability || 0,
+    state.persistence || 0,
+    state.error_aversion || 0,
+    state.reward_trace || 0,
+  ];
+  stateChart.update('none');
+
+  document.getElementById('p-temp').textContent = (surface.temperature || 0).toFixed(2);
+  document.getElementById('p-budget').textContent = surface.token_budget || '--';
+  document.getElementById('p-aggr').textContent = (surface.aggression || 0).toFixed(2);
+  document.getElementById('p-breadth').textContent = surface.search_breadth || '--';
+  document.getElementById('p-stop').textContent = (surface.stop_threshold || 0).toFixed(2);
+  document.getElementById('p-mode').textContent = surface.mode || '--';
+  const modeEl = document.getElementById('p-mode');
+  modeEl.style.color = MODE_COLORS[surface.mode] || '#c9d1d9';
+
+  const bar = document.getElementById('modeBar');
+  const cell = document.createElement('div');
+  cell.className = 'mode-cell';
+  cell.style.background = MODE_COLORS[surface.mode] || '#30363d';
+  cell.title = `Tick ${tick}: ${surface.mode}`;
+  bar.appendChild(cell);
+
+  const feed = document.getElementById('llmFeed');
+  const entry = document.createElement('div');
+  entry.className = 'feed-entry';
+  const desc = (action.description || '').slice(0, 150);
+  const tools = (action.tool_calls || []).map(tc =>
+    `<span class="feed-tool">${tc.tool}</span>`
+  ).join(' ');
+  const modeColor = MODE_COLORS[surface.mode] || '#c9d1d9';
+  entry.innerHTML = `<span class="feed-tick">#${tick}</span> <span class="feed-mode" style="color:${modeColor}">${surface.mode}</span> ${tools}<br>${desc}`;
+  feed.insertBefore(entry, feed.firstChild);
+
+  updateTestGrid(snapshot.test_results);
+  updateCodeChanges(tick, action, snapshot);
+  scheduleCapture();
+}
+
+/**
+ * Update the test status grid with individual test results.
+ */
+function updateTestGrid(testResults) {
+  if (!testResults || !testResults.details) return;
+
+  const grid = document.getElementById('testGrid');
+  grid.innerHTML = '';
+
+  for (const test of testResults.details) {
+    const card = document.createElement('div');
+    const wasFailingBefore = previousTestStatus[test.name] === 'failed';
+    const justPassed = wasFailingBefore && test.status === 'passed';
+
+    card.className = `test-card ${test.status}${justPassed ? ' just-passed' : ''}`;
+
+    const dot = document.createElement('div');
+    dot.className = `test-dot ${test.status}`;
+
+    const name = document.createElement('span');
+    name.className = 'test-name';
+    name.textContent = test.name;
+    name.title = test.error_message || test.name;
+
+    card.appendChild(dot);
+    card.appendChild(name);
+    grid.appendChild(card);
+
+    previousTestStatus[test.name] = test.status;
+  }
+}
+
+/**
+ * Update the code changes panel with files written and diff stats.
+ */
+function updateCodeChanges(tick, action, snapshot) {
+  const container = document.getElementById('codeChanges');
+  const written = action.files_written || [];
+  const diffStat = snapshot.git_diff_stat;
+
+  if (written.length === 0 && !diffStat) return;
+
+  const entry = document.createElement('div');
+  entry.className = 'change-entry';
+
+  let html = `<span class="change-tick">#${tick}</span> `;
+
+  if (diffStat) {
+    html += `<span class="change-add">+${diffStat.insertions}</span> `;
+    html += `<span class="change-del">-${diffStat.deletions}</span> `;
+    html += `<span class="change-file">(${diffStat.files_changed} files)</span>`;
+  }
+
+  if (written.length > 0) {
+    html += '<br>' + written.map(f => `<span class="change-file">${f}</span>`).join(', ');
+  }
+
+  entry.innerHTML = html;
+  container.insertBefore(entry, container.firstChild);
+}
+
+// --- Frame capture and video recording ---
+
+/**
+ * Capture the current page as a canvas frame after a short render delay.
+ */
+function scheduleCapture() {
+  if (!isRecording || captureInProgress) return;
+  captureInProgress = true;
+
+  setTimeout(async () => {
+    try {
+      const canvas = await html2canvas(document.body, {
+        width: 1280,
+        height: 720,
+        windowWidth: 1280,
+        windowHeight: 720,
+        backgroundColor: '#0d1117',
+        logging: false,
+      });
+      capturedFrames.push(canvas);
+      document.getElementById('recFrames').textContent = capturedFrames.length;
+    } catch (e) {
+      console.error('Frame capture failed:', e);
+    }
+    captureInProgress = false;
+  }, 600);
+}
+
+/**
+ * Build a WebM video from captured frames using MediaRecorder.
+ */
+async function buildVideo() {
+  if (capturedFrames.length === 0) return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280;
+  canvas.height = 720;
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(capturedFrames[0], 0, 0, 1280, 720);
+
+  const stream = canvas.captureStream();
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : 'video/webm';
+
+  const recorder = new MediaRecorder(stream, {
+    mimeType,
+    videoBitsPerSecond: 2500000,
+  });
+
+  return new Promise((resolve) => {
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+
+    recorder.start();
+
+    let i = 0;
+    function drawNext() {
+      if (i >= capturedFrames.length) {
+        setTimeout(() => recorder.stop(), 1500);
+        return;
+      }
+      ctx.clearRect(0, 0, 1280, 720);
+      ctx.drawImage(capturedFrames[i], 0, 0, 1280, 720);
+      i++;
+      setTimeout(drawNext, 1000);
+    }
+    drawNext();
+  });
+}
+
+/**
+ * Finish recording: build video, upload to server, trigger download.
+ */
+async function finishRecording() {
+  if (!isRecording || capturedFrames.length === 0) return;
+
+  const indicator = document.getElementById('recIndicator');
+  indicator.innerHTML = '<span class="rec-dot"></span>BUILDING VIDEO...';
+
+  const blob = await buildVideo();
+  if (!blob) return;
+
+  indicator.classList.add('done');
+  indicator.innerHTML = `<span class="rec-dot"></span>DONE (${capturedFrames.length} frames)`;
+
+  fetch('/recording', { method: 'POST', body: blob }).catch(() => {});
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'experiment.webm';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+/**
+ * Connect to SSE endpoint and process events.
+ */
+function connect() {
+  const statusEl = document.getElementById('status');
+  const es = new EventSource('/events');
+
+  es.onopen = () => {
+    statusEl.textContent = 'connected';
+    statusEl.className = 'status connected';
+  };
+
+  es.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      processTick(data);
+    } catch (e) {
+      console.error('Failed to parse SSE data:', e);
+    }
+  };
+
+  es.onerror = () => {
+    statusEl.textContent = 'disconnected';
+    statusEl.className = 'status disconnected';
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

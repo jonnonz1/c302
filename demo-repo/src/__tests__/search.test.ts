@@ -1,3 +1,20 @@
+/**
+ * @file Search endpoint tests for the demo todo API.
+ *
+ * These tests define the search functionality the c302 agent must implement.
+ * At baseline, all 4 tests fail (the search endpoint returns 501).
+ * A successful experiment run makes all 4 pass.
+ *
+ * Search requirements:
+ * - GET /todos/search?q=<term> matches against title (substring) and tags
+ * - Matching is case-insensitive
+ * - Returns an empty array when nothing matches
+ *
+ * The test pass rate for these tests is the primary reward signal.
+ *
+ * @project c302 demo-repo
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
@@ -6,6 +23,10 @@ import { clearTodos } from '../store.js';
 
 /**
  * Seed data matching the spec.
+ *
+ * Provides a mix of overlapping titles and tags to exercise
+ * substring matching and tag filtering.
+ *
  * | Title                  | Tags              |
  * |------------------------|-------------------|
  * | Buy groceries          | shopping, errands |
@@ -21,7 +42,9 @@ const SEED_TODOS = [
 ];
 
 /**
- * Creates a fresh Express app instance for testing.
+ * Creates a fresh Express app instance with JSON parsing and todo routes.
+ *
+ * @returns Configured Express application for supertest
  */
 function createApp() {
   const app = express();
