@@ -3,19 +3,20 @@
 # @file reset-demo-repo.sh
 # @description Reset the demo-repo to its baseline state for a clean experiment.
 #
-# Performs a hard git reset of demo-repo/ to the initial commit,
-# restoring the state where CRUD tests pass and search tests fail.
-# Also removes any untracked files via git clean.
+# Performs a hard git reset of demo-repo/ to the baseline commit,
+# restoring the state where the target tests fail. Also removes any
+# untracked files via git clean.
 #
-# This is the canonical starting point for all experiments: the agent's
-# task is to make the search tests pass without breaking the CRUD tests.
+# The baseline commit can be set via DEMO_BASELINE env var:
+#   - If set: resets to that specific commit hash
+#   - If not set: resets to HEAD (the latest commit)
 #
 # Called by run-experiment.sh before each experiment run.
 #
 # @usage ./scripts/reset-demo-repo.sh
+# @envvar DEMO_BASELINE  Commit hash to reset to (default: HEAD)
 #
 # @project c302
-# @phase 0
 ##
 
 set -euo pipefail
@@ -30,8 +31,9 @@ fi
 
 cd "$DEMO_DIR"
 
-INITIAL_COMMIT=$(git rev-list --max-parents=0 HEAD)
-git reset --hard "$INITIAL_COMMIT"
+BASELINE="${DEMO_BASELINE:-HEAD}"
+TARGET=$(git rev-parse "$BASELINE")
+git reset --hard "$TARGET"
 git clean -fd
 
-echo "demo-repo reset to initial commit: $INITIAL_COMMIT"
+echo "demo-repo reset to $BASELINE: $TARGET"

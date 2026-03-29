@@ -39,8 +39,12 @@ coverage/
 
 # Research data (large, generated)
 research/experiments/*/
+research/experiments/*.log
 research/*.pdf
 research/*.md
+
+# Worm-bridge simulation data
+worm-bridge/data/
 
 # Demo repo internal git
 # (demo-repo has its own .git — do not track its internal state)

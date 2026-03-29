@@ -59,6 +59,7 @@ declare -a RESULTS=()
 PASSED=0
 FAILED=0
 SKIPPED=0
+RAPID_FAILS=0
 
 mkdir -p "$BATTERY_DIR"
 
@@ -86,8 +87,10 @@ for i in $(seq 1 "$NUM_RUNS"); do
   RUN_ID="${BATTERY_ID}-$(printf '%02d' "$i")"
   RUN_DIR="$BATTERY_DIR/$RUN_ID"
 
-  # Resume support — skip if output exists and has trace data
-  if [ "$RESUME" = "1" ] && [ -d "$RUN_DIR" ] && [ -f "$RUN_DIR/worm-bridge.log" ]; then
+  # Resume support — skip if output exists and has meaningful agent data
+  # (agent-actions.json must exist and contain at least one action)
+  if [ "$RESUME" = "1" ] && [ -d "$RUN_DIR" ] && [ -f "$RUN_DIR/agent-actions.json" ] && \
+     python3 -c "import json,sys; sys.exit(0 if len(json.load(open('$RUN_DIR/agent-actions.json')))>0 else 1)" 2>/dev/null; then
     echo "[battery] [$i/$NUM_RUNS] $RUN_ID — skipped (already exists)" | tee -a "$LOG_FILE"
     RESULTS+=("SKIP")
     SKIPPED=$((SKIPPED + 1))
@@ -97,17 +100,38 @@ for i in $(seq 1 "$NUM_RUNS"); do
   echo "[battery] [$i/$NUM_RUNS] $RUN_ID — starting..." | tee -a "$LOG_FILE"
   START_TIME=$(date +%s)
 
-  if SKIP_BUILD=1 "$SCRIPT_DIR/run-experiment.sh" "$CONTROLLER" "$RUN_ID" 2>&1 | tee -a "$LOG_FILE"; then
-    ELAPSED=$(( $(date +%s) - START_TIME ))
+  # Use pipefail + PIPESTATUS to capture the real exit code through tee
+  set +e
+  SKIP_BUILD=1 "$SCRIPT_DIR/run-experiment.sh" "$CONTROLLER" "$RUN_ID" 2>&1 | tee -a "$LOG_FILE"
+  EXIT_CODE=${PIPESTATUS[0]}
+  set -e
+
+  ELAPSED=$(( $(date +%s) - START_TIME ))
+
+  if [ "$EXIT_CODE" -eq 0 ]; then
     echo "[battery] [$i/$NUM_RUNS] $RUN_ID — PASS (${ELAPSED}s)" | tee -a "$LOG_FILE"
     RESULTS+=("PASS")
     PASSED=$((PASSED + 1))
   else
-    EXIT_CODE=$?
-    ELAPSED=$(( $(date +%s) - START_TIME ))
     echo "[battery] [$i/$NUM_RUNS] $RUN_ID — FAIL (exit $EXIT_CODE, ${ELAPSED}s)" | tee -a "$LOG_FILE"
     RESULTS+=("FAIL")
     FAILED=$((FAILED + 1))
+
+    # Detect rapid failures (< 10s) which likely indicate API auth/credit errors.
+    # Two consecutive rapid failures triggers an early abort to avoid wasting runs.
+    if [ "$ELAPSED" -lt 10 ]; then
+      RAPID_FAILS=$((${RAPID_FAILS:-0} + 1))
+      if [ "$RAPID_FAILS" -ge 2 ]; then
+        echo "" | tee -a "$LOG_FILE"
+        echo "[battery] ABORT: $RAPID_FAILS consecutive rapid failures (< 10s each)." | tee -a "$LOG_FILE"
+        echo "[battery] This usually means the API key is invalid or out of credits." | tee -a "$LOG_FILE"
+        echo "[battery] Fix the issue, then resume with:" | tee -a "$LOG_FILE"
+        echo "    RESUME=1 $0 $CONTROLLER $NUM_RUNS $BATTERY_ID" | tee -a "$LOG_FILE"
+        break
+      fi
+    else
+      RAPID_FAILS=0
+    fi
   fi
 
   echo "" | tee -a "$LOG_FILE"

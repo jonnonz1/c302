@@ -9,11 +9,25 @@ export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 /**
  * Mode-specific user prompts that defer behavioral framing to the system prompt.
  */
+/**
+ * Mode-specific user prompts. When repo files are pre-loaded into the system
+ * prompt, the PRELOADED variants tell the agent not to re-read them.
+ */
 const USER_PROMPTS: Record<AgentMode, string> = {
   diagnose: 'Examine the repository. Read files and tests to understand what is broken and why. Do not make changes yet.',
   search: 'Search the codebase for code relevant to the failing tests. Look at imports, types, and related modules.',
   'edit-small': 'Make a small, targeted code change to fix or progress toward fixing the failing tests.',
   'edit-large': 'Implement the missing functionality needed to make the failing tests pass.',
+  'run-tests': 'Run the test suite with `npm test` and report which tests pass and which fail.',
+  reflect: 'Review what you have done so far and what the test results tell you. Plan your next step.',
+  stop: 'The task is complete.',
+};
+
+const USER_PROMPTS_PRELOADED: Record<AgentMode, string> = {
+  diagnose: 'The repository source files are provided above in your context. Analyze them to understand what is broken and why. Do not make changes yet. Do not re-read files you already have.',
+  search: 'The repository source files are provided above in your context. Identify the code relevant to the failing tests. Do not re-read files you already have.',
+  'edit-small': 'The repository source files are provided above in your context. Make a small, targeted code change to fix or progress toward fixing the failing tests. Write the fix directly — do not re-read files you already have.',
+  'edit-large': 'The repository source files are provided above in your context. Implement the missing functionality needed to make the failing tests pass. Write the fix directly — do not re-read files you already have.',
   'run-tests': 'Run the test suite with `npm test` and report which tests pass and which fail.',
   reflect: 'Review what you have done so far and what the test results tell you. Plan your next step.',
   stop: 'The task is complete.',
@@ -46,6 +60,17 @@ async function dispatchTool(
     default:
       return `Unknown tool: ${name}`;
   }
+}
+
+const TOOL_RESULT_MAX_CHARS = 8192;
+
+/**
+ * Truncate a tool result string to stay within the character budget.
+ */
+function truncateResult(result: string): string {
+  if (result.length <= TOOL_RESULT_MAX_CHARS) return result;
+  return result.slice(0, TOOL_RESULT_MAX_CHARS) +
+    `\n... (truncated, ${result.length} chars total)`;
 }
 
 /**
@@ -105,6 +130,10 @@ export function buildContextString(context: TickContext): string {
 
 /**
  * Execute one tick of LLM agent work. Handles multi-turn tool use.
+ *
+ * When repoContext is provided, the source files are pre-loaded into the
+ * system prompt as a cached prefix. This eliminates redundant file reads
+ * and enables Anthropic prompt caching (requires >=1024 tokens).
  */
 export async function execute(
   config: AgentConfig,
@@ -114,10 +143,11 @@ export async function execute(
   bus?: TickEventBus,
   tick?: number,
   context?: TickContext,
+  repoContext?: string,
 ): Promise<AgentAction> {
   const client = new Anthropic();
 
-  const systemPrompt = context
+  const modePrompt = context
     ? `${config.systemPrompt}\n\n${buildContextString(context)}`
     : config.systemPrompt;
 
@@ -126,8 +156,9 @@ export async function execute(
   const filesWritten: string[] = [];
   let description = '';
 
+  const prompts = repoContext ? USER_PROMPTS_PRELOADED : USER_PROMPTS;
   const messages: MessageParam[] = [
-    { role: 'user', content: USER_PROMPTS[mode] },
+    { role: 'user', content: prompts[mode] },
   ];
 
   const toolDefs = config.tools.map((t: ToolDefinition) => ({
@@ -137,7 +168,27 @@ export async function execute(
   }));
 
   let iterations = 0;
-  const maxIterations = 10;
+  // Fixed iteration count for all controllers (Phase 2 design).
+  // Decoupled from token_budget to remove the iteration-budget confound
+  // discovered in Phase 1 (see PHASE-1-REPORT.md Section 4.4).
+  // token_budget now controls only max_tokens per API call (response depth).
+  const maxIterations = 6;
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let totalCacheReadTokens = 0;
+
+  // Build system prompt: if repoContext is provided, use a two-part structure
+  // with cache_control on the stable file prefix for cross-tick caching.
+  const systemBlocks: Anthropic.Messages.TextBlockParam[] = repoContext
+    ? [
+        { type: 'text', text: repoContext, cache_control: { type: 'ephemeral' } },
+        { type: 'text', text: modePrompt },
+      ]
+    : [{ type: 'text', text: modePrompt }];
+
+  if (tick !== undefined) {
+    console.log(`  [cost] tick=${tick} mode=${mode} budget=${config.maxTokens} maxIters=${maxIterations} cached=${!!repoContext}`);
+  }
 
   while (iterations < maxIterations) {
     iterations++;
@@ -146,16 +197,23 @@ export async function execute(
       model,
       max_tokens: config.maxTokens,
       temperature: config.temperature,
-      system: [
-        {
-          type: 'text',
-          text: systemPrompt,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
+      system: systemBlocks,
       tools: toolDefs.length > 0 ? toolDefs : undefined,
       messages,
     });
+
+    const inputTokens = response.usage?.input_tokens ?? 0;
+    const outputTokens = response.usage?.output_tokens ?? 0;
+    totalInputTokens += inputTokens;
+    totalOutputTokens += outputTokens;
+
+    const cacheCreation = (response.usage as unknown as Record<string, number>)?.cache_creation_input_tokens ?? 0;
+    const cacheRead = (response.usage as unknown as Record<string, number>)?.cache_read_input_tokens ?? 0;
+    totalCacheReadTokens += cacheRead;
+
+    if (tick !== undefined) {
+      console.log(`  [cost] tick=${tick} iter=${iterations}/${maxIterations} in=${inputTokens} out=${outputTokens} cached=${cacheRead} cumIn=${totalInputTokens} cumOut=${totalOutputTokens}`);
+    }
 
     const textContent = extractText(response.content);
     if (textContent) {
@@ -196,11 +254,18 @@ export async function execute(
       toolResults.push({
         type: 'tool_result',
         tool_use_id: block.id,
-        content: result,
+        content: truncateResult(result),
       });
     }
 
     messages.push({ role: 'user', content: toolResults });
+  }
+
+  if (tick !== undefined) {
+    // Sonnet: $3/MTok uncached input, $0.30/MTok cached input, $15/MTok output
+    // Note: input_tokens from API = uncached only; cached reported separately
+    const estCost = (totalInputTokens * 3 + totalCacheReadTokens * 0.3 + totalOutputTokens * 15) / 1_000_000;
+    console.log(`  [cost] tick=${tick} DONE iters=${iterations} in=${totalInputTokens} cached=${totalCacheReadTokens} out=${totalOutputTokens} est=$${estCost.toFixed(4)}`);
   }
 
   return {

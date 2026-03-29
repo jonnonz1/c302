@@ -9,7 +9,7 @@
 ##
 
 .PHONY: install build test test-demo clean worm-bridge-dev agent-dev reset-demo analyze \
-       battery-static battery-random battery-synthetic battery-all
+       battery-static battery-random battery-synthetic battery-replay battery-all battery-phase2
 
 install:
 	npm install
@@ -55,4 +55,12 @@ battery-random:
 battery-synthetic:
 	./scripts/run-battery.sh synthetic $(BATTERY_RUNS)
 
+battery-replay:
+	./scripts/run-battery.sh replay $(BATTERY_RUNS)
+
+battery-connectome:
+	./scripts/run-battery.sh connectome $(BATTERY_RUNS)
+
 battery-all: battery-static battery-random battery-synthetic
+
+battery-phase2: battery-static battery-random battery-synthetic battery-connectome

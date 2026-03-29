@@ -30,7 +30,7 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 WORM_BRIDGE_PID=""
 WORM_BRIDGE_PORT="${WORM_BRIDGE_PORT:-8642}"
 MAX_ITERATIONS="${MAX_ITERATIONS:-30}"
-VALID_CONTROLLERS="static synthetic replay live plastic random"
+VALID_CONTROLLERS="static synthetic replay connectome live plastic random"
 RECORD="${RECORD:-0}"
 
 ## @fn cleanup

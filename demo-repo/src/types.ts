@@ -25,6 +25,8 @@ export interface Todo {
   completed: boolean;
   /** Optional, defaults to [] */
   tags: string[];
+  /** Priority level, defaults to 'medium' */
+  priority: 'low' | 'medium' | 'high';
   /** ISO 8601 timestamp, generated server-side */
   createdAt: string;
 }

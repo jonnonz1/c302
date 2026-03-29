@@ -1,10 +1,9 @@
 /**
  * @file In-memory todo store using a Map for O(1) lookups by ID.
  *
- * Provides CRUD operations for Todo items. This is the data layer
- * that the c302 agent must extend with search functionality.
- * The search implementation is intentionally missing -- the agent's
- * task is to add it.
+ * Provides CRUD and search operations for Todo items. The c302 agent
+ * must extend this with priority support: accept priority in createTodo,
+ * allow priority updates in updateTodo, and add filtering by priority.
  *
  * @module store
  * @project c302 demo-repo
@@ -38,12 +37,14 @@ export function getTodoById(id: string): Todo | undefined {
  * @param title - The title of the todo (required).
  * @param description - Optional description, defaults to ''.
  * @param tags - Optional tags array, defaults to [].
+ * @param priority - Optional priority level, defaults to 'medium'.
  * @returns The newly created todo.
  */
 export function createTodo(
   title: string,
   description: string = '',
   tags: string[] = [],
+  priority: 'low' | 'medium' | 'high' = 'medium',
 ): Todo {
   const todo: Todo = {
     id: uuidv4(),
@@ -51,6 +52,7 @@ export function createTodo(
     description,
     completed: false,
     tags,
+    priority,
     createdAt: new Date().toISOString(),
   };
   todos.set(todo.id, todo);
@@ -65,7 +67,7 @@ export function createTodo(
  */
 export function updateTodo(
   id: string,
-  updates: Partial<Pick<Todo, 'title' | 'description' | 'completed' | 'tags'>>,
+  updates: Partial<Pick<Todo, 'title' | 'description' | 'completed' | 'tags' | 'priority'>>,
 ): Todo | undefined {
   const existing = todos.get(id);
   if (!existing) return undefined;
@@ -89,4 +91,20 @@ export function deleteTodo(id: string): boolean {
  */
 export function clearTodos(): void {
   todos.clear();
+}
+
+/**
+ * Searches todos by query term, matching against title and tags.
+ * Case-insensitive substring matching for titles, exact match for tags.
+ * @param query - The search term to match against.
+ * @returns Array of matching todos.
+ */
+export function searchTodos(query: string): Todo[] {
+  if (!query) return [];
+  const lower = query.toLowerCase();
+  return getAllTodos().filter((todo) => {
+    const titleMatch = todo.title.toLowerCase().includes(lower);
+    const tagMatch = todo.tags.some((tag) => tag.toLowerCase().includes(lower));
+    return titleMatch || tagMatch;
+  });
 }

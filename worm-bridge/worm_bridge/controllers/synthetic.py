@@ -103,9 +103,9 @@ class SyntheticController(BaseController):
         """
         stop_threshold = 0.3 + 0.5 * s.stability
 
-        if s.arousal < 0.3 and s.stability > 0.7 and reward_trace > stop_threshold:
+        if s.arousal < 0.35 and s.stability > 0.7 and reward_trace > 0.02:
             return AgentMode.STOP
-        if s.error_aversion > 0.6 and reward_trace < 0:
+        if s.error_aversion > 0.15 and reward_trace < 0:
             return AgentMode.RUN_TESTS
         if reward_trace < 0 and s.persistence < 0.3:
             return AgentMode.REFLECT

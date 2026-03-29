@@ -1,4 +1,5 @@
 import { resolve, join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { WormClient } from './worm-client.js';
 import { snapshot } from './repo/observer.js';
@@ -22,6 +23,35 @@ import type {
   TickContext,
   TickHistoryEntry,
 } from './types.js';
+
+/**
+ * Recursively collect all .ts source files from a directory, excluding
+ * node_modules, dist, and dotfiles. Returns a formatted string suitable
+ * for injection into the system prompt.
+ */
+function loadRepoContext(repoPath: string): string {
+  const files: { rel: string; content: string }[] = [];
+
+  function walk(dir: string, base: string): void {
+    for (const entry of readdirSync(dir)) {
+      if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
+      const full = join(dir, entry);
+      const rel = base ? `${base}/${entry}` : entry;
+      if (statSync(full).isDirectory()) {
+        walk(full, rel);
+      } else if (entry.endsWith('.ts')) {
+        files.push({ rel, content: readFileSync(full, 'utf-8') });
+      }
+    }
+  }
+
+  walk(repoPath, '');
+  files.sort((a, b) => a.rel.localeCompare(b.rel));
+
+  const header = `--- Repository Source Files ---\nThe following files are the complete source of the target repository.\nUse this context to understand the codebase. You do NOT need to read these files with tools.\n`;
+  const body = files.map((f) => `=== ${f.rel} ===\n${f.content}`).join('\n\n');
+  return header + body;
+}
 
 /**
  * Build tick signals from before/after repo snapshots and iteration state.
@@ -92,6 +122,11 @@ async function main(): Promise<void> {
     progress_bonus: 0.05,
   };
 
+  // Pre-load all repo source files for injection into the system prompt.
+  // This eliminates redundant file reads and enables prompt caching.
+  let repoContext = loadRepoContext(repoPath);
+  console.log(`[init] Pre-loaded repo context: ${repoContext.length} chars (~${Math.round(repoContext.length / 4)} tokens)`);
+
   const meta: ExperimentMeta = {
     run_id: randomUUID(),
     controller_type: controllerType,
@@ -112,6 +147,7 @@ async function main(): Promise<void> {
   let lastRepoAfter: RepoSnapshot | null = null;
   let running = true;
   let iteration = 0;
+  let stallCount = 0;
 
   const modeDistribution: Record<AgentMode, number> = {
     diagnose: 0, search: 0, 'edit-small': 0, 'edit-large': 0,
@@ -164,7 +200,14 @@ async function main(): Promise<void> {
     };
 
     const config = apply(surface, tickContext);
-    const action = await execute(config, repoPath, surface.mode, undefined, bus, tickNum, tickContext);
+    const action = await execute(config, repoPath, surface.mode, undefined, bus, tickNum, tickContext, repoContext);
+
+    // Reload pre-loaded context if the agent wrote files, so subsequent ticks
+    // see the current code rather than the baseline. This prevents the agent
+    // from rewriting already-correct code on post-solve ticks.
+    if (action.files_written.length > 0) {
+      repoContext = loadRepoContext(repoPath);
+    }
 
     const repoAfter = await snapshot(repoPath);
 
@@ -172,6 +215,19 @@ async function main(): Promise<void> {
     tracker.push(tickReward);
     lastReward = tickReward;
     totalReward += tickReward.total;
+
+    // Count as stalled unless there's meaningful positive progress.
+    // Small negative rewards (e.g. -0.003 from post-solve rewrites) are stalls,
+    // not meaningful activity. Only a positive reward > 0.01 resets the counter.
+    if (tickReward.total > 0.01) {
+      stallCount = 0;
+    } else {
+      stallCount++;
+    }
+    if (stallCount >= 10) {
+      console.log(`Early stop: ${stallCount} consecutive stalled ticks (reward ≈ 0).`);
+      break;
+    }
 
     tickHistory.push({
       tick: tickNum,
