@@ -1,5 +1,9 @@
 # c302
 
+<p align="center">
+  <img src="c302-hero.svg" alt="c302 connectome visualization" width="100%"/>
+</p>
+
 A research prototype exploring behavioral modulation of LLM coding agents using C. elegans connectome-derived neural dynamics.
 
 ## What is this?
