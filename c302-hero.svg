@@ -1,424 +1,217 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
   <defs>
-    <!-- Background gradient -->
     <radialGradient id="bg" cx="50%" cy="50%" r="70%">
       <stop offset="0%" stop-color="#0a0e1a"/>
       <stop offset="100%" stop-color="#020408"/>
     </radialGradient>
-
-    <!-- Neuron glow -->
-    <radialGradient id="glowSensory" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#00e5ff" stop-opacity="0.2"/>
+    <radialGradient id="gS" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#00e5ff" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowMotor" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ff3d71" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#ff3d71" stop-opacity="0.2"/>
+    <radialGradient id="gM" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3d71" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#ff3d71" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#ff3d71" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowInter" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#a78bfa" stop-opacity="0.2"/>
+    <radialGradient id="gI" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#a78bfa" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowAgent" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
-      <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.2"/>
+    <radialGradient id="gA" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
     </radialGradient>
-
-    <!-- Synapse pulse filter -->
-    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    <filter id="gl" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
     </filter>
-    <filter id="bigGlow" x="-100%" y="-100%" width="300%" height="300%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6"/>
-    </filter>
-
-    <!-- Signal pulse gradient -->
-    <linearGradient id="pulse1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0"/>
-      <stop offset="40%" stop-color="#00e5ff" stop-opacity="0.8"/>
-      <stop offset="60%" stop-color="#a78bfa" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
-    </linearGradient>
-
-    <!-- Worm body path for the central spine -->
-    <path id="wormSpine" d="M 120,300 C 200,260 280,340 380,290 C 480,240 520,350 620,300 C 720,250 780,340 880,300 C 940,275 1000,310 1080,300" fill="none"/>
-  </defs>
-
-  <style>
-    @keyframes fadeInNode {
-      0% { opacity: 0; transform: scale(0); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; r: 2.5; }
-      50% { opacity: 1; r: 3.5; }
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.15; }
-      50% { opacity: 0.4; }
-    }
-    @keyframes signalTravel {
-      0% { offset-distance: 0%; opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { offset-distance: 100%; opacity: 0; }
-    }
-    @keyframes dashFlow {
-      to { stroke-dashoffset: -20; }
-    }
-    @keyframes breathe {
-      0%, 100% { opacity: 0.03; }
-      50% { opacity: 0.08; }
-    }
-    @keyframes textReveal {
-      0% { opacity: 0; letter-spacing: 0.8em; }
-      100% { opacity: 1; letter-spacing: 0.35em; }
-    }
-    @keyframes subtitleReveal {
-      0% { opacity: 0; }
-      100% { opacity: 0.5; }
-    }
-    @keyframes spineTrace {
-      0% { stroke-dashoffset: 2000; }
-      100% { stroke-dashoffset: 0; }
-    }
-
-    .synapse {
-      stroke-width: 0.6;
-      stroke-opacity: 0.12;
-      fill: none;
-    }
-    .synapse-active {
-      stroke-width: 0.8;
-      stroke-opacity: 0.3;
-      fill: none;
-      stroke-dasharray: 4 6;
-      animation: dashFlow 3s linear infinite;
-    }
-    .neuron-sensory { fill: #00e5ff; }
-    .neuron-motor { fill: #ff3d71; }
-    .neuron-inter { fill: #a78bfa; }
-    .neuron-agent { fill: #fbbf24; }
-
-    .neuron-core {
-      animation: pulse 3s ease-in-out infinite;
-    }
-    .neuron-halo {
-      animation: pulseGlow 3s ease-in-out infinite;
-    }
-
-    .signal-dot {
-      offset-path: path("M 120,300 C 200,260 280,340 380,290 C 480,240 520,350 620,300 C 720,250 780,340 880,300 C 940,275 1000,310 1080,300");
-      animation: signalTravel 4s ease-in-out infinite;
-    }
-    .signal-dot-2 {
-      offset-path: path("M 1080,300 C 1000,310 940,275 880,300 C 780,340 720,250 620,300 C 520,350 480,240 380,290 C 280,340 200,260 120,300");
-      animation: signalTravel 5s ease-in-out infinite;
-      animation-delay: 1.5s;
-    }
-    .signal-dot-3 {
-      offset-path: path("M 120,300 C 200,260 280,340 380,290 C 480,240 520,350 620,300 C 720,250 780,340 880,300 C 940,275 1000,310 1080,300");
-      animation: signalTravel 3.5s ease-in-out infinite;
-      animation-delay: 2.8s;
-    }
-
-    .worm-spine-trace {
-      stroke-dasharray: 2000;
-      animation: spineTrace 3s ease-out forwards;
-    }
-    .bg-grid {
-      animation: breathe 6s ease-in-out infinite;
-    }
-
-    .title-text {
-      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 64px;
-      fill: #e2e8f0;
-      animation: textReveal 2s ease-out forwards;
-    }
-    .subtitle-text {
-      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
-      font-weight: 400;
-      font-size: 13px;
-      fill: #94a3b8;
-      animation: subtitleReveal 2s ease-out 0.8s forwards;
-      opacity: 0;
-    }
-    .legend-label {
-      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-      font-size: 9px;
-      fill: #64748b;
-    }
-  </style>
-
-  <!-- Background -->
-  <rect width="1200" height="600" fill="url(#bg)"/>
-
-  <!-- Subtle grid -->
-  <g class="bg-grid" opacity="0.05">
     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
       <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#334155" stroke-width="0.5"/>
     </pattern>
-    <rect width="1200" height="600" fill="url(#grid)"/>
-  </g>
+  </defs>
 
-  <!-- Central worm spine trace -->
-  <use href="#wormSpine" stroke="#00e5ff" stroke-width="1.5" stroke-opacity="0.08" filter="url(#bigGlow)" class="worm-spine-trace"/>
-  <use href="#wormSpine" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.15" stroke-dasharray="2 8" class="worm-spine-trace" style="animation-delay: 0.5s"/>
+  <!-- Background -->
+  <rect width="1200" height="600" fill="url(#bg)"/>
+  <rect width="1200" height="600" fill="url(#grid)" opacity="0.04"/>
 
-  <!-- === SYNAPTIC CONNECTIONS === -->
-  <!-- Dense network of connections radiating from spine -->
-  <g class="connections">
-    <!-- Sensory cluster (left) connections -->
-    <line x1="95" y1="210" x2="140" y2="280" class="synapse" stroke="#00e5ff"/>
-    <line x1="130" y1="185" x2="170" y2="265" class="synapse" stroke="#00e5ff"/>
-    <line x1="80" y1="250" x2="150" y2="295" class="synapse" stroke="#00e5ff"/>
-    <line x1="160" y1="195" x2="200" y2="270" class="synapse" stroke="#00e5ff"/>
-    <line x1="95" y1="210" x2="130" y2="185" class="synapse" stroke="#00e5ff"/>
-    <line x1="80" y1="250" x2="95" y2="210" class="synapse" stroke="#00e5ff"/>
-    <line x1="130" y1="185" x2="160" y2="195" class="synapse" stroke="#00e5ff"/>
-    <line x1="140" y1="280" x2="200" y2="270" class="synapse-active" stroke="#00e5ff"/>
-    <line x1="150" y1="295" x2="200" y2="270" class="synapse" stroke="#00e5ff"/>
+  <!-- Worm spine glow -->
+  <path d="M 120,300 C 200,260 280,340 380,290 C 480,240 520,350 620,300 C 720,250 780,340 880,300 C 940,275 1000,310 1080,300" fill="none" stroke="#00e5ff" stroke-width="2" stroke-opacity="0.06" filter="url(#gl)"/>
+  <path d="M 120,300 C 200,260 280,340 380,290 C 480,240 520,350 620,300 C 720,250 780,340 880,300 C 940,275 1000,310 1080,300" fill="none" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.12" stroke-dasharray="2 8"/>
 
-    <!-- Sensory to spine -->
-    <line x1="200" y1="270" x2="280" y2="320" class="synapse-active" stroke="#00e5ff" style="animation-delay: -1s"/>
-    <line x1="160" y1="195" x2="280" y2="320" class="synapse" stroke="#00e5ff"/>
-    <line x1="150" y1="295" x2="280" y2="340" class="synapse" stroke="#00e5ff"/>
+  <!-- ═══ SYNAPTIC CONNECTIONS ═══ -->
 
-    <!-- Sensory lower cluster -->
-    <line x1="110" y1="380" x2="170" y2="350" class="synapse" stroke="#00e5ff"/>
-    <line x1="85" y1="355" x2="110" y2="380" class="synapse" stroke="#00e5ff"/>
-    <line x1="85" y1="355" x2="150" y2="295" class="synapse" stroke="#00e5ff"/>
-    <line x1="170" y1="350" x2="280" y2="340" class="synapse" stroke="#00e5ff"/>
-    <line x1="145" y1="400" x2="170" y2="350" class="synapse" stroke="#00e5ff"/>
-    <line x1="145" y1="400" x2="110" y2="380" class="synapse" stroke="#00e5ff"/>
+  <!-- Sensory cluster -->
+  <line x1="95" y1="210" x2="140" y2="280" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="130" y1="185" x2="170" y2="265" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="80" y1="250" x2="150" y2="295" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="160" y1="195" x2="200" y2="270" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="95" y1="210" x2="130" y2="185" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="80" y1="250" x2="95" y2="210" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="130" y1="185" x2="160" y2="195" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="140" y1="280" x2="200" y2="270" stroke="#00e5ff" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="150" y1="295" x2="200" y2="270" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="200" y1="270" x2="280" y2="320" stroke="#00e5ff" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="160" y1="195" x2="280" y2="320" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="150" y1="295" x2="280" y2="340" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="110" y1="380" x2="170" y2="350" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="85" y1="355" x2="110" y2="380" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="85" y1="355" x2="150" y2="295" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="170" y1="350" x2="280" y2="340" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="145" y1="400" x2="170" y2="350" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="145" y1="400" x2="110" y2="380" stroke="#00e5ff" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Interneuron cluster (center-left) -->
-    <line x1="280" y1="320" x2="340" y2="230" class="synapse" stroke="#a78bfa"/>
-    <line x1="280" y1="340" x2="320" y2="270" class="synapse-active" stroke="#a78bfa" style="animation-delay: -0.5s"/>
-    <line x1="340" y1="230" x2="320" y2="270" class="synapse" stroke="#a78bfa"/>
-    <line x1="320" y1="270" x2="380" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="340" y1="230" x2="380" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="300" y1="190" x2="340" y2="230" class="synapse" stroke="#a78bfa"/>
-    <line x1="300" y1="190" x2="280" y2="320" class="synapse" stroke="#a78bfa"/>
-    <line x1="350" y1="370" x2="320" y2="270" class="synapse" stroke="#a78bfa"/>
-    <line x1="350" y1="370" x2="380" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="280" y1="340" x2="350" y2="370" class="synapse" stroke="#a78bfa"/>
-    <line x1="310" y1="400" x2="350" y2="370" class="synapse" stroke="#a78bfa"/>
-    <line x1="310" y1="400" x2="280" y2="340" class="synapse" stroke="#a78bfa"/>
+  <!-- Interneuron cluster left -->
+  <line x1="280" y1="320" x2="340" y2="230" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="280" y1="340" x2="320" y2="270" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="340" y1="230" x2="320" y2="270" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="320" y1="270" x2="380" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="340" y1="230" x2="380" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="300" y1="190" x2="340" y2="230" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="300" y1="190" x2="280" y2="320" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="350" y1="370" x2="320" y2="270" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="350" y1="370" x2="380" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="280" y1="340" x2="350" y2="370" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="310" y1="400" x2="350" y2="370" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="310" y1="400" x2="280" y2="340" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Central hub (dense) -->
-    <line x1="380" y1="290" x2="470" y2="260" class="synapse-active" stroke="#a78bfa" style="animation-delay: -2s"/>
-    <line x1="380" y1="290" x2="520" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="470" y1="260" x2="520" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="470" y1="260" x2="510" y2="220" class="synapse" stroke="#a78bfa"/>
-    <line x1="520" y1="310" x2="580" y2="280" class="synapse" stroke="#a78bfa"/>
-    <line x1="510" y1="220" x2="580" y2="280" class="synapse-active" stroke="#a78bfa"/>
-    <line x1="450" y1="360" x2="520" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="450" y1="360" x2="380" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="490" y1="380" x2="450" y2="360" class="synapse" stroke="#a78bfa"/>
-    <line x1="490" y1="380" x2="520" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="470" y1="180" x2="510" y2="220" class="synapse" stroke="#a78bfa"/>
-    <line x1="470" y1="180" x2="470" y2="260" class="synapse" stroke="#a78bfa"/>
-    <line x1="540" y1="190" x2="510" y2="220" class="synapse" stroke="#a78bfa"/>
-    <line x1="540" y1="190" x2="580" y2="280" class="synapse" stroke="#a78bfa"/>
+  <!-- Central hub -->
+  <line x1="380" y1="290" x2="470" y2="260" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="380" y1="290" x2="520" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="470" y1="260" x2="520" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="470" y1="260" x2="510" y2="220" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="520" y1="310" x2="580" y2="280" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="510" y1="220" x2="580" y2="280" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="450" y1="360" x2="520" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="450" y1="360" x2="380" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="490" y1="380" x2="450" y2="360" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="490" y1="380" x2="520" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="470" y1="180" x2="510" y2="220" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="470" y1="180" x2="470" y2="260" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="540" y1="190" x2="510" y2="220" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="540" y1="190" x2="580" y2="280" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Central to right -->
-    <line x1="580" y1="280" x2="660" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="580" y1="280" x2="700" y2="260" class="synapse-active" stroke="#a78bfa" style="animation-delay: -1.5s"/>
-    <line x1="660" y1="310" x2="700" y2="260" class="synapse" stroke="#a78bfa"/>
-    <line x1="660" y1="310" x2="720" y2="350" class="synapse" stroke="#a78bfa"/>
-    <line x1="700" y1="260" x2="760" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="720" y1="350" x2="760" y2="290" class="synapse" stroke="#a78bfa"/>
-    <line x1="650" y1="200" x2="700" y2="260" class="synapse" stroke="#a78bfa"/>
-    <line x1="650" y1="200" x2="580" y2="280" class="synapse" stroke="#a78bfa"/>
-    <line x1="680" y1="380" x2="660" y2="310" class="synapse" stroke="#a78bfa"/>
-    <line x1="680" y1="380" x2="720" y2="350" class="synapse" stroke="#a78bfa"/>
+  <!-- Central to right -->
+  <line x1="580" y1="280" x2="660" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="580" y1="280" x2="700" y2="260" stroke="#a78bfa" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="660" y1="310" x2="700" y2="260" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="660" y1="310" x2="720" y2="350" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="700" y1="260" x2="760" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="720" y1="350" x2="760" y2="290" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="650" y1="200" x2="700" y2="260" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="650" y1="200" x2="580" y2="280" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="680" y1="380" x2="660" y2="310" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="680" y1="380" x2="720" y2="350" stroke="#a78bfa" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Agent cluster (right-center, gold connections) -->
-    <line x1="760" y1="290" x2="840" y2="250" class="synapse-active" stroke="#fbbf24"/>
-    <line x1="760" y1="290" x2="830" y2="330" class="synapse" stroke="#fbbf24"/>
-    <line x1="840" y1="250" x2="830" y2="330" class="synapse" stroke="#fbbf24"/>
-    <line x1="840" y1="250" x2="880" y2="300" class="synapse" stroke="#fbbf24"/>
-    <line x1="830" y1="330" x2="880" y2="300" class="synapse-active" stroke="#fbbf24" style="animation-delay: -0.7s"/>
-    <line x1="800" y1="200" x2="840" y2="250" class="synapse" stroke="#fbbf24"/>
-    <line x1="800" y1="200" x2="760" y2="290" class="synapse" stroke="#fbbf24"/>
-    <line x1="810" y1="380" x2="830" y2="330" class="synapse" stroke="#fbbf24"/>
-    <line x1="810" y1="380" x2="760" y2="290" class="synapse" stroke="#fbbf24"/>
+  <!-- Agent cluster (gold) -->
+  <line x1="760" y1="290" x2="840" y2="250" stroke="#fbbf24" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="760" y1="290" x2="830" y2="330" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="840" y1="250" x2="830" y2="330" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="840" y1="250" x2="880" y2="300" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="830" y1="330" x2="880" y2="300" stroke="#fbbf24" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="800" y1="200" x2="840" y2="250" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="800" y1="200" x2="760" y2="290" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="810" y1="380" x2="830" y2="330" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="810" y1="380" x2="760" y2="290" stroke="#fbbf24" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Motor cluster (right) connections -->
-    <line x1="880" y1="300" x2="960" y2="260" class="synapse-active" stroke="#ff3d71" style="animation-delay: -2.5s"/>
-    <line x1="880" y1="300" x2="950" y2="340" class="synapse" stroke="#ff3d71"/>
-    <line x1="960" y1="260" x2="950" y2="340" class="synapse" stroke="#ff3d71"/>
-    <line x1="960" y1="260" x2="1020" y2="230" class="synapse" stroke="#ff3d71"/>
-    <line x1="950" y1="340" x2="1020" y2="310" class="synapse" stroke="#ff3d71"/>
-    <line x1="1020" y1="230" x2="1020" y2="310" class="synapse" stroke="#ff3d71"/>
-    <line x1="1020" y1="230" x2="1070" y2="270" class="synapse-active" stroke="#ff3d71"/>
-    <line x1="1020" y1="310" x2="1070" y2="270" class="synapse" stroke="#ff3d71"/>
-    <line x1="1070" y1="270" x2="1100" y2="220" class="synapse" stroke="#ff3d71"/>
-    <line x1="1070" y1="270" x2="1110" y2="320" class="synapse" stroke="#ff3d71"/>
-    <line x1="1100" y1="220" x2="1110" y2="320" class="synapse" stroke="#ff3d71"/>
-    <line x1="990" y1="370" x2="950" y2="340" class="synapse" stroke="#ff3d71"/>
-    <line x1="990" y1="370" x2="1020" y2="310" class="synapse" stroke="#ff3d71"/>
-    <line x1="940" y1="195" x2="960" y2="260" class="synapse" stroke="#ff3d71"/>
-    <line x1="940" y1="195" x2="1020" y2="230" class="synapse" stroke="#ff3d71"/>
-    <line x1="1060" y1="370" x2="1070" y2="270" class="synapse" stroke="#ff3d71"/>
-    <line x1="1060" y1="370" x2="1020" y2="310" class="synapse" stroke="#ff3d71"/>
-    <line x1="1060" y1="370" x2="1110" y2="320" class="synapse" stroke="#ff3d71"/>
+  <!-- Motor cluster (red) -->
+  <line x1="880" y1="300" x2="960" y2="260" stroke="#ff3d71" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="880" y1="300" x2="950" y2="340" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="960" y1="260" x2="950" y2="340" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="960" y1="260" x2="1020" y2="230" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="950" y1="340" x2="1020" y2="310" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1020" y1="230" x2="1020" y2="310" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1020" y1="230" x2="1070" y2="270" stroke="#ff3d71" stroke-width="0.8" stroke-opacity="0.25" stroke-dasharray="4 6"/>
+  <line x1="1020" y1="310" x2="1070" y2="270" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1070" y1="270" x2="1100" y2="220" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1070" y1="270" x2="1110" y2="320" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1100" y1="220" x2="1110" y2="320" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="990" y1="370" x2="950" y2="340" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="990" y1="370" x2="1020" y2="310" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="940" y1="195" x2="960" y2="260" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="940" y1="195" x2="1020" y2="230" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1060" y1="370" x2="1070" y2="270" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1060" y1="370" x2="1020" y2="310" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="1060" y1="370" x2="1110" y2="320" stroke="#ff3d71" stroke-width="0.6" stroke-opacity="0.12"/>
 
-    <!-- Cross-type connections (sensory-inter, inter-motor) -->
-    <line x1="200" y1="270" x2="320" y2="270" class="synapse" stroke="#5eead4" stroke-opacity="0.08"/>
-    <line x1="170" y1="350" x2="350" y2="370" class="synapse" stroke="#5eead4" stroke-opacity="0.08"/>
-    <line x1="700" y1="260" x2="840" y2="250" class="synapse" stroke="#c4b5fd" stroke-opacity="0.08"/>
-    <line x1="720" y1="350" x2="830" y2="330" class="synapse" stroke="#c4b5fd" stroke-opacity="0.08"/>
-  </g>
+  <!-- Cross-type connections -->
+  <line x1="200" y1="270" x2="320" y2="270" stroke="#5eead4" stroke-width="0.5" stroke-opacity="0.08"/>
+  <line x1="170" y1="350" x2="350" y2="370" stroke="#5eead4" stroke-width="0.5" stroke-opacity="0.08"/>
+  <line x1="700" y1="260" x2="840" y2="250" stroke="#c4b5fd" stroke-width="0.5" stroke-opacity="0.08"/>
+  <line x1="720" y1="350" x2="830" y2="330" stroke="#c4b5fd" stroke-width="0.5" stroke-opacity="0.08"/>
 
-  <!-- === NEURON NODES === -->
+  <!-- ═══ NEURON NODES ═══ -->
+
   <!-- Sensory neurons (cyan) -->
-  <g>
-    <circle cx="95" cy="210" r="12" fill="url(#glowSensory)" class="neuron-halo"/>
-    <circle cx="95" cy="210" r="2.5" class="neuron-sensory neuron-core" style="animation-delay: 0s"/>
-    <circle cx="130" cy="185" r="10" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 0.5s"/>
-    <circle cx="130" cy="185" r="2" class="neuron-sensory neuron-core" style="animation-delay: 0.5s"/>
-    <circle cx="80" cy="250" r="10" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 1s"/>
-    <circle cx="80" cy="250" r="2" class="neuron-sensory neuron-core" style="animation-delay: 1s"/>
-    <circle cx="160" cy="195" r="11" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 0.3s"/>
-    <circle cx="160" cy="195" r="2.5" class="neuron-sensory neuron-core" style="animation-delay: 0.3s"/>
-    <circle cx="200" cy="270" r="14" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 0.7s"/>
-    <circle cx="200" cy="270" r="3" class="neuron-sensory neuron-core" style="animation-delay: 0.7s"/>
-    <circle cx="140" cy="280" r="9" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 1.2s"/>
-    <circle cx="140" cy="280" r="2" class="neuron-sensory neuron-core" style="animation-delay: 1.2s"/>
-    <circle cx="150" cy="295" r="9" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 0.9s"/>
-    <circle cx="150" cy="295" r="1.8" class="neuron-sensory neuron-core" style="animation-delay: 0.9s"/>
-    <circle cx="85" cy="355" r="10" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 1.4s"/>
-    <circle cx="85" cy="355" r="2" class="neuron-sensory neuron-core" style="animation-delay: 1.4s"/>
-    <circle cx="110" cy="380" r="9" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 0.6s"/>
-    <circle cx="110" cy="380" r="1.8" class="neuron-sensory neuron-core" style="animation-delay: 0.6s"/>
-    <circle cx="170" cy="350" r="10" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 1.1s"/>
-    <circle cx="170" cy="350" r="2" class="neuron-sensory neuron-core" style="animation-delay: 1.1s"/>
-    <circle cx="145" cy="400" r="8" fill="url(#glowSensory)" class="neuron-halo" style="animation-delay: 1.6s"/>
-    <circle cx="145" cy="400" r="1.5" class="neuron-sensory neuron-core" style="animation-delay: 1.6s"/>
-  </g>
+  <circle cx="95" cy="210" r="12" fill="url(#gS)"/><circle cx="95" cy="210" r="2.5" fill="#00e5ff"/>
+  <circle cx="130" cy="185" r="10" fill="url(#gS)"/><circle cx="130" cy="185" r="2" fill="#00e5ff"/>
+  <circle cx="80" cy="250" r="10" fill="url(#gS)"/><circle cx="80" cy="250" r="2" fill="#00e5ff"/>
+  <circle cx="160" cy="195" r="11" fill="url(#gS)"/><circle cx="160" cy="195" r="2.5" fill="#00e5ff"/>
+  <circle cx="200" cy="270" r="14" fill="url(#gS)"/><circle cx="200" cy="270" r="3" fill="#00e5ff"/>
+  <circle cx="140" cy="280" r="9" fill="url(#gS)"/><circle cx="140" cy="280" r="2" fill="#00e5ff"/>
+  <circle cx="150" cy="295" r="9" fill="url(#gS)"/><circle cx="150" cy="295" r="1.8" fill="#00e5ff"/>
+  <circle cx="85" cy="355" r="10" fill="url(#gS)"/><circle cx="85" cy="355" r="2" fill="#00e5ff"/>
+  <circle cx="110" cy="380" r="9" fill="url(#gS)"/><circle cx="110" cy="380" r="1.8" fill="#00e5ff"/>
+  <circle cx="170" cy="350" r="10" fill="url(#gS)"/><circle cx="170" cy="350" r="2" fill="#00e5ff"/>
+  <circle cx="145" cy="400" r="8" fill="url(#gS)"/><circle cx="145" cy="400" r="1.5" fill="#00e5ff"/>
 
   <!-- Interneurons (purple) -->
-  <g>
-    <circle cx="280" cy="320" r="13" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.2s"/>
-    <circle cx="280" cy="320" r="3" class="neuron-inter neuron-core" style="animation-delay: 0.2s"/>
-    <circle cx="280" cy="340" r="10" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.8s"/>
-    <circle cx="280" cy="340" r="2" class="neuron-inter neuron-core" style="animation-delay: 0.8s"/>
-    <circle cx="340" cy="230" r="11" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.4s"/>
-    <circle cx="340" cy="230" r="2.5" class="neuron-inter neuron-core" style="animation-delay: 0.4s"/>
-    <circle cx="320" cy="270" r="12" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.3s"/>
-    <circle cx="320" cy="270" r="2.5" class="neuron-inter neuron-core" style="animation-delay: 1.3s"/>
-    <circle cx="300" cy="190" r="9" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.6s"/>
-    <circle cx="300" cy="190" r="2" class="neuron-inter neuron-core" style="animation-delay: 0.6s"/>
-    <circle cx="350" cy="370" r="10" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.0s"/>
-    <circle cx="350" cy="370" r="2" class="neuron-inter neuron-core" style="animation-delay: 1.0s"/>
-    <circle cx="310" cy="400" r="8" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.5s"/>
-    <circle cx="310" cy="400" r="1.5" class="neuron-inter neuron-core" style="animation-delay: 1.5s"/>
-
-    <circle cx="380" cy="290" r="14" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.1s"/>
-    <circle cx="380" cy="290" r="3.5" class="neuron-inter neuron-core" style="animation-delay: 0.1s"/>
-    <circle cx="470" cy="260" r="12" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.5s"/>
-    <circle cx="470" cy="260" r="2.5" class="neuron-inter neuron-core" style="animation-delay: 0.5s"/>
-    <circle cx="520" cy="310" r="13" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.9s"/>
-    <circle cx="520" cy="310" r="3" class="neuron-inter neuron-core" style="animation-delay: 0.9s"/>
-    <circle cx="510" cy="220" r="10" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.3s"/>
-    <circle cx="510" cy="220" r="2" class="neuron-inter neuron-core" style="animation-delay: 0.3s"/>
-    <circle cx="580" cy="280" r="14" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.7s"/>
-    <circle cx="580" cy="280" r="3.5" class="neuron-inter neuron-core" style="animation-delay: 0.7s"/>
-    <circle cx="450" cy="360" r="9" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.1s"/>
-    <circle cx="450" cy="360" r="2" class="neuron-inter neuron-core" style="animation-delay: 1.1s"/>
-    <circle cx="490" cy="380" r="8" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.4s"/>
-    <circle cx="490" cy="380" r="1.5" class="neuron-inter neuron-core" style="animation-delay: 1.4s"/>
-    <circle cx="470" cy="180" r="9" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.8s"/>
-    <circle cx="470" cy="180" r="2" class="neuron-inter neuron-core" style="animation-delay: 0.8s"/>
-    <circle cx="540" cy="190" r="8" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.2s"/>
-    <circle cx="540" cy="190" r="1.5" class="neuron-inter neuron-core" style="animation-delay: 1.2s"/>
-
-    <circle cx="660" cy="310" r="12" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.4s"/>
-    <circle cx="660" cy="310" r="2.5" class="neuron-inter neuron-core" style="animation-delay: 0.4s"/>
-    <circle cx="700" cy="260" r="13" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.6s"/>
-    <circle cx="700" cy="260" r="3" class="neuron-inter neuron-core" style="animation-delay: 0.6s"/>
-    <circle cx="720" cy="350" r="10" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.0s"/>
-    <circle cx="720" cy="350" r="2" class="neuron-inter neuron-core" style="animation-delay: 1.0s"/>
-    <circle cx="760" cy="290" r="14" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.2s"/>
-    <circle cx="760" cy="290" r="3.5" class="neuron-inter neuron-core" style="animation-delay: 0.2s"/>
-    <circle cx="650" cy="200" r="9" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 0.9s"/>
-    <circle cx="650" cy="200" r="2" class="neuron-inter neuron-core" style="animation-delay: 0.9s"/>
-    <circle cx="680" cy="380" r="8" fill="url(#glowInter)" class="neuron-halo" style="animation-delay: 1.3s"/>
-    <circle cx="680" cy="380" r="1.5" class="neuron-inter neuron-core" style="animation-delay: 1.3s"/>
-  </g>
+  <circle cx="280" cy="320" r="13" fill="url(#gI)"/><circle cx="280" cy="320" r="3" fill="#a78bfa"/>
+  <circle cx="280" cy="340" r="10" fill="url(#gI)"/><circle cx="280" cy="340" r="2" fill="#a78bfa"/>
+  <circle cx="340" cy="230" r="11" fill="url(#gI)"/><circle cx="340" cy="230" r="2.5" fill="#a78bfa"/>
+  <circle cx="320" cy="270" r="12" fill="url(#gI)"/><circle cx="320" cy="270" r="2.5" fill="#a78bfa"/>
+  <circle cx="300" cy="190" r="9" fill="url(#gI)"/><circle cx="300" cy="190" r="2" fill="#a78bfa"/>
+  <circle cx="350" cy="370" r="10" fill="url(#gI)"/><circle cx="350" cy="370" r="2" fill="#a78bfa"/>
+  <circle cx="310" cy="400" r="8" fill="url(#gI)"/><circle cx="310" cy="400" r="1.5" fill="#a78bfa"/>
+  <circle cx="380" cy="290" r="14" fill="url(#gI)"/><circle cx="380" cy="290" r="3.5" fill="#a78bfa"/>
+  <circle cx="470" cy="260" r="12" fill="url(#gI)"/><circle cx="470" cy="260" r="2.5" fill="#a78bfa"/>
+  <circle cx="520" cy="310" r="13" fill="url(#gI)"/><circle cx="520" cy="310" r="3" fill="#a78bfa"/>
+  <circle cx="510" cy="220" r="10" fill="url(#gI)"/><circle cx="510" cy="220" r="2" fill="#a78bfa"/>
+  <circle cx="580" cy="280" r="14" fill="url(#gI)"/><circle cx="580" cy="280" r="3.5" fill="#a78bfa"/>
+  <circle cx="450" cy="360" r="9" fill="url(#gI)"/><circle cx="450" cy="360" r="2" fill="#a78bfa"/>
+  <circle cx="490" cy="380" r="8" fill="url(#gI)"/><circle cx="490" cy="380" r="1.5" fill="#a78bfa"/>
+  <circle cx="470" cy="180" r="9" fill="url(#gI)"/><circle cx="470" cy="180" r="2" fill="#a78bfa"/>
+  <circle cx="540" cy="190" r="8" fill="url(#gI)"/><circle cx="540" cy="190" r="1.5" fill="#a78bfa"/>
+  <circle cx="660" cy="310" r="12" fill="url(#gI)"/><circle cx="660" cy="310" r="2.5" fill="#a78bfa"/>
+  <circle cx="700" cy="260" r="13" fill="url(#gI)"/><circle cx="700" cy="260" r="3" fill="#a78bfa"/>
+  <circle cx="720" cy="350" r="10" fill="url(#gI)"/><circle cx="720" cy="350" r="2" fill="#a78bfa"/>
+  <circle cx="760" cy="290" r="14" fill="url(#gI)"/><circle cx="760" cy="290" r="3.5" fill="#a78bfa"/>
+  <circle cx="650" cy="200" r="9" fill="url(#gI)"/><circle cx="650" cy="200" r="2" fill="#a78bfa"/>
+  <circle cx="680" cy="380" r="8" fill="url(#gI)"/><circle cx="680" cy="380" r="1.5" fill="#a78bfa"/>
 
   <!-- Agent neurons (gold) -->
-  <g>
-    <circle cx="840" cy="250" r="14" fill="url(#glowAgent)" class="neuron-halo" style="animation-delay: 0.3s"/>
-    <circle cx="840" cy="250" r="3.5" class="neuron-agent neuron-core" style="animation-delay: 0.3s"/>
-    <circle cx="830" cy="330" r="11" fill="url(#glowAgent)" class="neuron-halo" style="animation-delay: 0.8s"/>
-    <circle cx="830" cy="330" r="2.5" class="neuron-agent neuron-core" style="animation-delay: 0.8s"/>
-    <circle cx="880" cy="300" r="16" fill="url(#glowAgent)" class="neuron-halo" style="animation-delay: 0.1s"/>
-    <circle cx="880" cy="300" r="4" class="neuron-agent neuron-core" style="animation-delay: 0.1s"/>
-    <circle cx="800" cy="200" r="9" fill="url(#glowAgent)" class="neuron-halo" style="animation-delay: 1.1s"/>
-    <circle cx="800" cy="200" r="2" class="neuron-agent neuron-core" style="animation-delay: 1.1s"/>
-    <circle cx="810" cy="380" r="9" fill="url(#glowAgent)" class="neuron-halo" style="animation-delay: 1.4s"/>
-    <circle cx="810" cy="380" r="2" class="neuron-agent neuron-core" style="animation-delay: 1.4s"/>
-  </g>
+  <circle cx="840" cy="250" r="14" fill="url(#gA)"/><circle cx="840" cy="250" r="3.5" fill="#fbbf24"/>
+  <circle cx="830" cy="330" r="11" fill="url(#gA)"/><circle cx="830" cy="330" r="2.5" fill="#fbbf24"/>
+  <circle cx="880" cy="300" r="16" fill="url(#gA)"/><circle cx="880" cy="300" r="4" fill="#fbbf24"/>
+  <circle cx="800" cy="200" r="9" fill="url(#gA)"/><circle cx="800" cy="200" r="2" fill="#fbbf24"/>
+  <circle cx="810" cy="380" r="9" fill="url(#gA)"/><circle cx="810" cy="380" r="2" fill="#fbbf24"/>
 
   <!-- Motor neurons (red/pink) -->
-  <g>
-    <circle cx="960" cy="260" r="12" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.5s"/>
-    <circle cx="960" cy="260" r="2.5" class="neuron-motor neuron-core" style="animation-delay: 0.5s"/>
-    <circle cx="950" cy="340" r="11" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.9s"/>
-    <circle cx="950" cy="340" r="2.5" class="neuron-motor neuron-core" style="animation-delay: 0.9s"/>
-    <circle cx="1020" cy="230" r="12" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.3s"/>
-    <circle cx="1020" cy="230" r="2.5" class="neuron-motor neuron-core" style="animation-delay: 0.3s"/>
-    <circle cx="1020" cy="310" r="11" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.7s"/>
-    <circle cx="1020" cy="310" r="2.5" class="neuron-motor neuron-core" style="animation-delay: 0.7s"/>
-    <circle cx="1070" cy="270" r="13" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.2s"/>
-    <circle cx="1070" cy="270" r="3" class="neuron-motor neuron-core" style="animation-delay: 0.2s"/>
-    <circle cx="1100" cy="220" r="10" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 1.0s"/>
-    <circle cx="1100" cy="220" r="2" class="neuron-motor neuron-core" style="animation-delay: 1.0s"/>
-    <circle cx="1110" cy="320" r="10" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 1.3s"/>
-    <circle cx="1110" cy="320" r="2" class="neuron-motor neuron-core" style="animation-delay: 1.3s"/>
-    <circle cx="940" cy="195" r="9" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 0.6s"/>
-    <circle cx="940" cy="195" r="2" class="neuron-motor neuron-core" style="animation-delay: 0.6s"/>
-    <circle cx="990" cy="370" r="9" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 1.1s"/>
-    <circle cx="990" cy="370" r="2" class="neuron-motor neuron-core" style="animation-delay: 1.1s"/>
-    <circle cx="1060" cy="370" r="9" fill="url(#glowMotor)" class="neuron-halo" style="animation-delay: 1.5s"/>
-    <circle cx="1060" cy="370" r="1.8" class="neuron-motor neuron-core" style="animation-delay: 1.5s"/>
-  </g>
+  <circle cx="960" cy="260" r="12" fill="url(#gM)"/><circle cx="960" cy="260" r="2.5" fill="#ff3d71"/>
+  <circle cx="950" cy="340" r="11" fill="url(#gM)"/><circle cx="950" cy="340" r="2.5" fill="#ff3d71"/>
+  <circle cx="1020" cy="230" r="12" fill="url(#gM)"/><circle cx="1020" cy="230" r="2.5" fill="#ff3d71"/>
+  <circle cx="1020" cy="310" r="11" fill="url(#gM)"/><circle cx="1020" cy="310" r="2.5" fill="#ff3d71"/>
+  <circle cx="1070" cy="270" r="13" fill="url(#gM)"/><circle cx="1070" cy="270" r="3" fill="#ff3d71"/>
+  <circle cx="1100" cy="220" r="10" fill="url(#gM)"/><circle cx="1100" cy="220" r="2" fill="#ff3d71"/>
+  <circle cx="1110" cy="320" r="10" fill="url(#gM)"/><circle cx="1110" cy="320" r="2" fill="#ff3d71"/>
+  <circle cx="940" cy="195" r="9" fill="url(#gM)"/><circle cx="940" cy="195" r="2" fill="#ff3d71"/>
+  <circle cx="990" cy="370" r="9" fill="url(#gM)"/><circle cx="990" cy="370" r="2" fill="#ff3d71"/>
+  <circle cx="1060" cy="370" r="9" fill="url(#gM)"/><circle cx="1060" cy="370" r="1.8" fill="#ff3d71"/>
 
-  <!-- === SIGNAL PULSES traveling along spine === -->
-  <circle r="4" fill="#00e5ff" filter="url(#softGlow)" class="signal-dot" opacity="0"/>
-  <circle r="3" fill="#ff3d71" filter="url(#softGlow)" class="signal-dot-2" opacity="0"/>
-  <circle r="3.5" fill="#fbbf24" filter="url(#softGlow)" class="signal-dot-3" opacity="0"/>
+  <!-- ═══ TYPOGRAPHY ═══ -->
+  <text x="600" y="510" text-anchor="middle" font-family="'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace" font-weight="700" font-size="64" fill="#e2e8f0" letter-spacing="0.35em">c302</text>
+  <text x="600" y="545" text-anchor="middle" font-family="'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace" font-weight="400" font-size="13" fill="#94a3b8" opacity="0.5">connectome-driven agent modulation</text>
 
-  <!-- === TYPOGRAPHY === -->
-  <!-- Title -->
-  <text x="600" y="510" text-anchor="middle" class="title-text">c302</text>
+  <!-- Legend -->
+  <circle cx="38" cy="530" r="3" fill="#00e5ff"/>
+  <text x="46" y="533.5" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-size="9" fill="#64748b">sensory</text>
+  <circle cx="113" cy="530" r="3" fill="#a78bfa"/>
+  <text x="121" y="533.5" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-size="9" fill="#64748b">inter</text>
+  <circle cx="168" cy="530" r="3" fill="#fbbf24"/>
+  <text x="176" y="533.5" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-size="9" fill="#64748b">agent</text>
+  <circle cx="228" cy="530" r="3" fill="#ff3d71"/>
+  <text x="236" y="533.5" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-size="9" fill="#64748b">motor</text>
 
-  <!-- Subtitle -->
-  <text x="600" y="545" text-anchor="middle" class="subtitle-text">connectome-driven agent modulation</text>
-
-  <!-- === LEGEND === -->
-  <g transform="translate(38, 530)">
-    <circle cx="0" cy="0" r="3" fill="#00e5ff"/>
-    <text x="8" y="3.5" class="legend-label">sensory</text>
-    <circle cx="75" cy="0" r="3" fill="#a78bfa"/>
-    <text x="83" y="3.5" class="legend-label">inter</text>
-    <circle cx="130" cy="0" r="3" fill="#fbbf24"/>
-    <text x="138" y="3.5" class="legend-label">agent</text>
-    <circle cx="190" cy="0" r="3" fill="#ff3d71"/>
-    <text x="198" y="3.5" class="legend-label">motor</text>
-  </g>
-
-  <!-- 302 neuron count badge -->
-  <g transform="translate(1130, 545)">
-    <text text-anchor="end" class="legend-label" fill="#475569">302 neurons</text>
-  </g>
+  <text x="1162" y="548" text-anchor="end" font-family="'SF Mono','Fira Code','Cascadia Code',monospace" font-size="9" fill="#475569">302 neurons</text>
 </svg>
