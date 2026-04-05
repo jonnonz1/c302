@@ -25,8 +25,10 @@ export interface Todo {
   completed: boolean;
   /** Optional, defaults to [] */
   tags: string[];
-  /** Priority level, defaults to 'medium' */
+  /** 'low' | 'medium' | 'high', defaults to 'medium' */
   priority: 'low' | 'medium' | 'high';
+  /** Optional ISO 8601 date string for due date */
+  dueDate: string | null;
   /** ISO 8601 timestamp, generated server-side */
   createdAt: string;
 }

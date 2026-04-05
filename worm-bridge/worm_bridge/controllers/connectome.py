@@ -48,6 +48,27 @@ The connectome controller derives persistence from PVC neuron activity:
 Both produce a persistence value. The difference is WHERE the dynamics
 come from — engineered formulas vs. biological neural circuit topology.
 
+## Anti-aliasing filter (2026-03-31)
+
+The c302 parameter set B simulation produces IAF chattering
+dynamics at ~5 kHz (spike period ~4 samples at 0.05 ms timestep). The
+controller samples traces at ~12 Hz (one read per tick, ~1,667 samples
+apart). This is 790x above the Nyquist frequency, causing severe
+aliasing: each tick's point-sampled value is effectively random.
+
+The biologically relevant signal for sensory neurons (ASEL, ASER) is
+calcium concentration, not membrane voltage. Calcium integrates over
+spiking with time constants of hundreds of milliseconds (Suzuki et al.
+2008). A windowed average over ±500 samples (~50 ms of simulated time)
+approximates this calcium integration, recovering the mean activity level
+within the current oscillatory regime. This is standard anti-aliasing
+applied to a high-frequency simulation sampled at a low-frequency
+behavioural timescale.
+
+Without this filter, ASEL oscillation triggered premature STOP at tick 2
+in 33% of Level 1 runs and 100% of Level 2 runs (see PHASE-1-REPORT.md
+Appendix E.5).
+
 @project c302
 @phase 2
 """
@@ -110,6 +131,10 @@ class ConnectomeController(BaseController):
         # Signal-driven stimulus overlay (added to baseline trace values)
         self._signal_boost: dict[str, float] = {n: 0.0 for n in self._traces}
 
+        # Per-tick cache: prevents double-read EMA mutation when the same
+        # neuron is read for both state computation and logging.
+        self._tick_cache: dict[str, float] = {}
+
         self._state = WormState()
         self._last_mode: AgentMode | None = None
         self._last_activity: NeuronGroupActivity | None = None
@@ -130,6 +155,12 @@ class ConnectomeController(BaseController):
     def tick(self, request: TickRequest) -> tuple[ControlSurface, WormState]:
         reward = request.reward if request.reward is not None else 0.0
         signals = request.signals
+
+        # Clear per-tick cache so each neuron's EMA is updated exactly once.
+        # Fix for double-read bug: without this, logging reads in Step 5
+        # would mutate the EMA a second time, inflating sensory neuron
+        # values and causing premature STOP (see PHASE-1-REPORT.md E.5).
+        self._tick_cache = {}
 
         # --- Step 1: Compute signal-driven stimulus overlay ---
         #
@@ -170,12 +201,42 @@ class ConnectomeController(BaseController):
         idx = int(self._cursor) % self._n_timepoints
 
         # --- Step 3: Read neuron activities (baseline + signal overlay) ---
+        #
+        # Anti-aliasing: sensory neurons (ASEL, ASER, AWCL, AWCR) are read
+        # with a windowed average (±500 samples) to suppress the ~5 kHz
+        # IAF chattering artifact. This approximates calcium
+        # dynamics, which is the biologically relevant readout for sensory
+        # neurons (Suzuki et al. 2008). Command neurons retain point-
+        # sampling since their sparse firing is the relevant signal.
+
+        _SENSORY = {"ASEL", "ASER", "AWCL", "AWCR"}
+        _ANTIALIAS_HALF_WINDOW = 500  # ±500 samples = ~50 ms simulated time
 
         def read_neuron(name: str) -> float:
-            """Read baseline trace + signal overlay, normalize, smooth."""
+            """Read baseline trace + signal overlay, normalize, smooth.
+
+            Results are cached per tick to prevent double-read EMA mutation.
+            Sensory neurons use windowed averaging (anti-aliasing filter);
+            command neurons use point-sampling.
+            """
+            if name in self._tick_cache:
+                return self._tick_cache[name]
+
             trace = self._traces.get(name, [])
+
             if not trace or idx >= len(trace):
                 raw = 0.0
+            elif name in _SENSORY:
+                # Windowed average: anti-aliasing filter for sensory neurons.
+                # The c302 simulation produces ~5 kHz spiking from IAF dynamics.
+                # Sampling at tick rate (~12 Hz) without filtering causes severe
+                # aliasing. The windowed average recovers mean activity within the
+                # current oscillatory regime, approximating calcium concentration
+                # which is the biologically relevant readout.
+                lo = max(0, idx - _ANTIALIAS_HALF_WINDOW)
+                hi = min(len(trace), idx + _ANTIALIAS_HALF_WINDOW + 1)
+                window = trace[lo:hi]
+                raw = sum(_normalize_voltage(v) for v in window) / len(window)
             else:
                 raw = _normalize_voltage(trace[idx])
 
@@ -183,11 +244,11 @@ class ConnectomeController(BaseController):
             raw = _clamp(raw + self._signal_boost.get(name, 0.0), 0.0, 1.0)
 
             # EMA smoothing: slower for command neurons (sparse spikers)
-            sensory = {"ASEL", "ASER", "AWCL", "AWCR"}
-            alpha = 0.5 if name in sensory else 0.2
+            alpha = 0.5 if name in _SENSORY else 0.2
 
             smoothed = alpha * raw + (1 - alpha) * self._ema.get(name, 0.0)
             self._ema[name] = smoothed
+            self._tick_cache[name] = smoothed
             return smoothed
 
         def read_group_avg(names: list[str]) -> float:

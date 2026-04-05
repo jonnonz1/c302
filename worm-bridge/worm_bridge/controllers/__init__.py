@@ -2,6 +2,7 @@
 
 from worm_bridge.controllers.base import BaseController
 from worm_bridge.controllers.connectome import ConnectomeController
+from worm_bridge.controllers.live import LiveNeuronController
 from worm_bridge.controllers.random_controller import RandomController
 from worm_bridge.controllers.replay import ReplayController
 from worm_bridge.controllers.static import StaticController
@@ -13,6 +14,7 @@ _REGISTRY: dict[str, type[BaseController]] = {
     "random": RandomController,
     "replay": ReplayController,
     "connectome": ConnectomeController,
+    "live": LiveNeuronController,
 }
 
 
@@ -36,6 +38,7 @@ def create_controller(controller_type: str) -> BaseController:
 
 __all__ = [
     "BaseController",
+    "LiveNeuronController",
     "RandomController",
     "ReplayController",
     "StaticController",

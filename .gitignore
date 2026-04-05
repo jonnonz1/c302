@@ -41,7 +41,13 @@ coverage/
 research/experiments/*/
 research/experiments/*.log
 research/*.pdf
+
+# Research docs — exclude presentation-only, include paper-backing
 research/*.md
+!research/PAPER.md
+!research/EXPERIMENTAL-METHODOLOGY.md
+!research/HOW-IT-WORKS.md
+!research/PHASE-1-REPORT.md
 
 # Worm-bridge simulation data
 worm-bridge/data/
