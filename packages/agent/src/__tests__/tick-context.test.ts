@@ -20,6 +20,7 @@ function makeEntry(overrides: Partial<TickHistoryEntry> = {}): TickHistoryEntry 
     tick: 1,
     mode: 'diagnose',
     filesWritten: [],
+    filesRead: [],
     testPassRate: null,
     reward: 0,
     description: 'Read files to understand structure',
@@ -97,7 +98,7 @@ describe('buildContextString', () => {
     expect(result).toContain('...');
   });
 
-  it('keeps total context string under 500 chars', () => {
+  it('keeps total context string under 15000 chars', () => {
     const entries = Array.from({ length: 5 }, (_, i) =>
       makeEntry({
         tick: i + 1,
@@ -110,6 +111,6 @@ describe('buildContextString', () => {
     );
     const ctx: TickContext = { tick: 6, maxTicks: 30, history: entries };
     const result = buildContextString(ctx);
-    expect(result.length).toBeLessThanOrEqual(500);
+    expect(result.length).toBeLessThanOrEqual(15000);
   });
 });

@@ -515,6 +515,8 @@ export interface TickHistoryEntry {
   tick: number;
   mode: AgentMode;
   filesWritten: string[];
+  /** Files read via read_file tool, with their contents (for cross-tick retention). */
+  filesRead: { path: string; content: string }[];
   testPassRate: number | null;
   reward: number;
   description: string;

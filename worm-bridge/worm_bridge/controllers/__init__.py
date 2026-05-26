@@ -3,6 +3,7 @@
 from worm_bridge.controllers.base import BaseController
 from worm_bridge.controllers.connectome import ConnectomeController
 from worm_bridge.controllers.live import LiveNeuronController
+from worm_bridge.controllers.null import NullController
 from worm_bridge.controllers.random_controller import RandomController
 from worm_bridge.controllers.replay import ReplayController
 from worm_bridge.controllers.static import StaticController
@@ -15,6 +16,7 @@ _REGISTRY: dict[str, type[BaseController]] = {
     "replay": ReplayController,
     "connectome": ConnectomeController,
     "live": LiveNeuronController,
+    "null": NullController,
 }
 
 
@@ -22,7 +24,7 @@ def create_controller(controller_type: str) -> BaseController:
     """Create a controller by type name.
 
     Args:
-        controller_type: One of "static", "synthetic", "random", "replay", "connectome".
+        controller_type: One of "static", "synthetic", "random", "replay", "connectome", "live", "null".
 
     Raises:
         ValueError: If controller_type is not registered.
@@ -39,6 +41,7 @@ def create_controller(controller_type: str) -> BaseController:
 __all__ = [
     "BaseController",
     "LiveNeuronController",
+    "NullController",
     "RandomController",
     "ReplayController",
     "StaticController",

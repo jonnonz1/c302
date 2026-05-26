@@ -124,8 +124,16 @@ async function main(): Promise<void> {
 
   // Pre-load all repo source files for injection into the system prompt.
   // This eliminates redundant file reads and enables prompt caching.
-  let repoContext = loadRepoContext(repoPath);
-  console.log(`[init] Pre-loaded repo context: ${repoContext.length} chars (~${Math.round(repoContext.length / 4)} tokens)`);
+  // Set PRELOAD_CONTEXT=0 to disable (Phase 3: forces agent to discover
+  // code via tools, activating search_breadth/novelty_seek/aggression).
+  const preloadContext = process.env.PRELOAD_CONTEXT !== '0';
+  let repoContext: string | undefined;
+  if (preloadContext) {
+    repoContext = loadRepoContext(repoPath);
+    console.log(`[init] Pre-loaded repo context: ${repoContext.length} chars (~${Math.round(repoContext.length / 4)} tokens)`);
+  } else {
+    console.log(`[init] PRELOAD_CONTEXT=0 — agent must discover code via tools`);
+  }
 
   const meta: ExperimentMeta = {
     run_id: randomUUID(),
@@ -205,7 +213,7 @@ async function main(): Promise<void> {
     // Reload pre-loaded context if the agent wrote files, so subsequent ticks
     // see the current code rather than the baseline. This prevents the agent
     // from rewriting already-correct code on post-solve ticks.
-    if (action.files_written.length > 0) {
+    if (preloadContext && action.files_written.length > 0) {
       repoContext = loadRepoContext(repoPath);
     }
 
@@ -229,10 +237,25 @@ async function main(): Promise<void> {
       break;
     }
 
+    // Collect file contents from read_file tool calls for cross-tick retention.
+    // Without pre-loaded context, the agent needs this to avoid re-reading every tick.
+    const filesReadThisTick: { path: string; content: string }[] = [];
+    if (!preloadContext) {
+      for (const tc of action.tool_calls) {
+        if (tc.tool === 'read_file' && tc.args.path && typeof tc.result === 'string') {
+          filesReadThisTick.push({
+            path: tc.args.path as string,
+            content: tc.result,
+          });
+        }
+      }
+    }
+
     tickHistory.push({
       tick: tickNum,
       mode: surface.mode,
       filesWritten: action.files_written,
+      filesRead: filesReadThisTick,
       testPassRate: repoAfter.test_results?.pass_rate ?? null,
       reward: tickReward.total,
       description: action.description.slice(0, 100),

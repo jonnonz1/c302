@@ -39,7 +39,7 @@ trap handle_signal INT TERM
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <controller-type> <num-runs> [battery-id]"
   echo ""
-  echo "  controller-type: static | synthetic | random | replay | live | plastic"
+  echo "  controller-type: static | synthetic | random | replay | live | plastic | null"
   echo "  num-runs:        number of experiments (e.g. 20)"
   echo "  battery-id:      optional label (default: <controller>-battery-<timestamp>)"
   echo ""

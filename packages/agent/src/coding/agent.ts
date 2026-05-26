@@ -92,7 +92,7 @@ function extractText(blocks: ContentBlock[]): string {
 
 const CONTEXT_MAX_HISTORY = 5;
 const CONTEXT_DESCRIPTION_MAX = 100;
-const CONTEXT_MAX_CHARS = 500;
+const CONTEXT_MAX_CHARS = 15000;
 
 /**
  * Build a context string from tick history for injection into the system prompt.
@@ -123,6 +123,24 @@ export function buildContextString(context: TickContext): string {
     const candidate = `${result}\n${line}`;
     if (candidate.length > CONTEXT_MAX_CHARS) break;
     result = candidate;
+  }
+
+  // Accumulate file contents from prior ticks so the agent retains
+  // knowledge of files it read. Deduped by path (latest version wins).
+  const fileMap = new Map<string, string>();
+  for (const entry of recent) {
+    for (const f of entry.filesRead) {
+      fileMap.set(f.path, f.content);
+    }
+  }
+  if (fileMap.size > 0) {
+    result += '\n\n--- Files Read (from previous ticks) ---';
+    result += '\nYou have already read these files. Do NOT re-read them. Use this knowledge to make edits.';
+    for (const [path, content] of fileMap) {
+      const section = `\n\n=== ${path} ===\n${content}`;
+      if (result.length + section.length > CONTEXT_MAX_CHARS) break;
+      result += section;
+    }
   }
 
   return result;
@@ -256,6 +274,22 @@ export async function execute(
         tool_use_id: block.id,
         content: truncateResult(result),
       });
+    }
+
+    // Mark the last tool result for prompt caching so iterations 2+
+    // within a tick get cache hits on the full conversation prefix.
+    // This is a billing optimization only — does not affect model output.
+    // Anthropic limits cache_control to 4 breakpoints per request, so
+    // remove the marker from any previous user message first.
+    if (toolResults.length > 0) {
+      for (const msg of messages) {
+        if (msg.role === 'user' && Array.isArray(msg.content)) {
+          for (const block of msg.content) {
+            delete (block as unknown as Record<string, unknown>).cache_control;
+          }
+        }
+      }
+      (toolResults[toolResults.length - 1] as unknown as Record<string, unknown>).cache_control = { type: 'ephemeral' };
     }
 
     messages.push({ role: 'user', content: toolResults });
