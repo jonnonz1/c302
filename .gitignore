@@ -49,6 +49,10 @@ research/*.md
 !research/HOW-IT-WORKS.md
 !research/PHASE-1-REPORT.md
 
+# Presentation bundles (built artifacts deployed to Railway; sources live in packages/presentation)
+research/presentation-bundle/
+research/presentation-bundle.zip
+
 # Worm-bridge simulation data
 worm-bridge/data/
 

@@ -206,21 +206,21 @@ The trace-replay connectome required extensive engineering: EMA smoothing, value
 
 However, we cannot cleanly separate topology from feedback with the current design. The live controller reads `activity` (built-in low-pass filter) while trace-replay reads voltage (requiring external anti-aliasing). A controlled comparison would require additional conditions we did not run.
 
-### 6.3 The Collapsed Control Surface
+### 6.3 The Untested Control Surface
 
-The system architecture describes a seven-parameter control surface driven by six internal state variables. In practice, the control surface largely collapsed. Pre-loading ~3,869 tokens of repository context into the system prompt meant the agent already knew the codebase structure, file contents, and test layout before the controller emitted any parameters. Under these conditions, four of six state variables (novelty-seeking, persistence, error aversion, and reward trace) showed no measurable effect on agent behavior. The agent did not need to be told to explore — it could already see everything. It did not need persistence modulated — it had no uncertainty about what existed.
+The system architecture describes a seven-parameter control surface driven by six internal state variables. Under our experimental conditions, only two of these parameters — mode and arousal — showed measurable effects on agent behavior. The reason is straightforward: we pre-loaded approximately 3,869 tokens of repository context into the agent's system prompt for cost optimization. The agent already knew the codebase structure, file contents, and test layout before the controller emitted any parameters. Search breadth had nothing to search. Novelty-seeking had nothing to discover. Temperature and aggression varied within a range the LLM was robust to.
 
-The parameters that *did* matter were mode (which action category to perform) and arousal (which influenced stop timing). Temperature, token budget, search breadth, aggression, and allowed tools either had no observable effect or varied within a range the LLM was robust to. The seven-dimensional control surface was, operationally, closer to a two-dimensional one: a categorical mode selector and a scalar activity level.
+This is not a finding about the architecture — it is a gap in our evaluation. We did not test conditions where the full surface would be exercised. A larger codebase without pre-loaded context, where the agent must discover relevant files through search, would be the appropriate setting to evaluate whether search breadth, novelty-seeking, temperature, and aggression differentiate controllers. Whether those parameters provide value under such conditions is an open question.
 
-This means the feedback finding (Section 5.3) should be interpreted narrowly. The live controller does not modulate agent behavior across six continuous dimensions through synaptic dynamics. It selects different *modes* than the trace-replay controller because its accumulated neural state, updated by feedback, crosses different threshold boundaries at different times. The mechanism is real — feedback through the connectome topology does produce different mode sequences — but the channel through which it acts is far narrower than the architecture suggests.
+The feedback finding (Section 5.3) should be interpreted within this context. The live controller produces different behavior from the trace-replay controller through mode selection — its accumulated neural state crosses different threshold boundaries at different times. The mechanism is real, but the channel through which it acts is narrower than the full architecture allows for. A broader evaluation would determine whether the remaining parameters carry signal in more demanding settings.
 
-We did not run a baseline comparison of the LLM with no external controller, performing the same task with only its own judgment about when to stop and what to do next. Without this comparison, we cannot determine whether external behavioral modulation adds value beyond what the agent achieves unassisted.
+We also did not run a baseline comparison of the LLM with no external controller. Without this, we cannot determine whether external behavioral modulation adds value beyond what the agent achieves unassisted.
 
 ### 6.4 Limitations
 
 1. **No uncontrolled baseline.** We did not run the agent without an external controller, so all comparisons are between controllers. However, the core finding — that live and trace-replay controllers produce different dynamics from the same topology — does not depend on comparison to an uncontrolled agent.
 
-2. **Collapsed control surface and narrow task domain.** Pre-loaded context reduced the seven-parameter surface to approximately two effective dimensions (Section 6.3), and all experiments target a single TypeScript application. These are limitations of the evaluation, not the architecture — a larger codebase without pre-loaded context would exercise the full surface. The feedback finding (live vs. trace-replay) holds within the reduced surface.
+2. **Untested control surface.** Pre-loaded context meant only mode and arousal showed measurable effects (Section 6.3). We did not evaluate conditions (e.g., larger codebases without pre-loaded context) where the remaining parameters would be exercised. All experiments target a single TypeScript application. The feedback finding (live vs. trace-replay) holds within the tested surface.
 
 3. **No statistical significance.** With n = 15 per cell, no pairwise comparison reaches p < 0.05. The results are descriptive. That said, the live-vs-connectome comparison is qualitative, not marginal: 0.960 vs. 0.867 pass rate, with the connectome producing identical outcomes across all 15 runs.
 
@@ -232,7 +232,7 @@ We did not run a baseline comparison of the LLM with no external controller, per
 
 We have presented an architecture for external behavioral modulation of LLM coding agents using biological neural dynamics from the *C. elegans* connectome. Across 392 experiment runs with six controllers at two difficulty levels, we find that the connectome's topology is necessary but not sufficient for functional behavioral control. The live NEURON controller, running a real-time simulation with closed-loop feedback, achieves 100% task success at Level 1 and a 0.960 pass rate at Level 2. The trace-replay controller, using the same topology without feedback, achieves 0.867 at Level 2 while never producing the code the task requires.
 
-The control surface architecture — separating behavioral modulation from agent logic — operated through a far narrower channel than designed: of seven parameters and six state variables, only mode selection and arousal showed measurable effects. Whether external behavioral modulation adds value beyond the LLM's own judgment remains untested.
+Under our experimental conditions (pre-loaded codebase context), only mode selection and arousal showed measurable effects — the remaining control surface parameters were not exercised. Evaluating the full surface under conditions where the agent must discover the codebase through search is a clear next step.
 
 Future directions include evaluation on diverse task domains, exploration of larger connectomes (the *Drosophila* adult brain — 139,000 neurons — was mapped in 2024 [10]), learning signal mappings through optimization, and tuning the live controller's stop mechanism.
 
@@ -264,4 +264,4 @@ None of our results reach statistical significance. What we can say is this: the
 
 ---
 
-*Code and data: [github.com/jgregorian/c302](https://github.com/jgregorian/c302). All 392 experiment runs preserved in `research/experiments/`. Full methodology in `research/EXPERIMENTAL-METHODOLOGY.md`.*
+*Code and data: [github.com/jonnonz1/c302](https://github.com/jonnonz1/c302). All 392 experiment runs preserved in `research/experiments/`. Full methodology in `research/EXPERIMENTAL-METHODOLOGY.md`.*
